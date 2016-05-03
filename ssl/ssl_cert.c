@@ -1128,7 +1128,7 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     if (cpk_sec && cpk_sec->chain)
         extra_certs_sec = cpk_sec->chain;
     else
-        extra_certs = s->ctx->extra_certs;
+        extra_certs_sec = s->ctx->extra_certs;
 
     if ((s->mode & SSL_MODE_NO_AUTO_CHAIN) || extra_certs_sec)
         no_chain_sec = 1;
