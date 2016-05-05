@@ -522,6 +522,8 @@ struct ssl_session_st {
 #  ifndef OPENSSL_NO_PSK
     char *psk_identity_hint;
     char *psk_identity;
+    char *psk_sec_identity_hint;
+    char* psk_sec_identity;
 #  endif
     /*
      * Used to indicate that session resumption is not allowed. Applications
@@ -531,6 +533,7 @@ struct ssl_session_st {
     int not_resumable;
     /* The cert is the certificate used to establish this connection */
     struct sess_cert_st /* SESS_CERT */ *sess_cert;
+    struct sess_cert_st /* SESS_CERT */ *sess_cert_sec;
     /*
      * This is the cert for the other end. On clients, it will be the same as
      * sess_cert->peer_key->x509 (the latter is not enough as sess_cert is
@@ -538,6 +541,7 @@ struct ssl_session_st {
      * ssl_asn1.c).
      */
     X509 *peer;
+    X509 *peer_sec;
     /*
      * when app_verify_callback accepts a session where the peer's
      * certificate is not ok, we must remember the error for session reuse:
@@ -1104,6 +1108,7 @@ struct ssl_ctx_st {
 
 #  ifndef OPENSSL_NO_PSK
     char *psk_identity_hint;
+    char *psk_sec_identity_hint;
     unsigned int (*psk_client_callback) (SSL *ssl, const char *hint,
                                          char *identity,
                                          unsigned int max_identity_len,

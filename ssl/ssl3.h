@@ -577,10 +577,11 @@ typedef struct ssl3_state_st {
         const SSL_CIPHER *new_cipher_sec;
 #  ifndef OPENSSL_NO_DH
         DH *dh;
+        DH *dh_sec;
 #  endif
 #  ifndef OPENSSL_NO_ECDH
         EC_KEY *ecdh;           /* holds short lived ECDH key */
-        // EC_KEY *ecdh_sec;
+        EC_KEY *ecdh_sec;
 #  endif
         /* used when SSL_ST_FLUSH_DATA is entered */
         int next_state;
@@ -591,6 +592,7 @@ typedef struct ssl3_state_st {
         char ctype[SSL3_CT_NUMBER];
         STACK_OF(X509_NAME) *ca_names;
         int use_rsa_tmp;
+        int use_sec_rsa_tmp;
         int key_block_length;
         int key_block_length_sec;
         unsigned char *key_block;

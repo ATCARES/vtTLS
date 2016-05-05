@@ -1120,8 +1120,19 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     else
     	x_sec = NULL;
 
-    if (s->cert_sec->chain_store)
-        chain_store_sec = s->cert_sec->chain_store;
+    /*
+     * TODO: I am currently using the second certificate as a 'placeholder'.
+     * I am sending the first certificate twice, just for now.
+     *
+     * See TODO in s3_srvr.c -- Im currently sending the first certificate twice
+     * due to the fact that new_cipher_sec and cert_sec are not related
+     *
+     */
+
+    /*if (s->cert_sec->chain_store)
+        chain_store_sec = s->cert_sec->chain_store;*/
+    if (s->cert->chain_store)
+        chain_store_sec = s->cert->chain_store;
 	else
 		chain_store_sec = s->ctx->cert_store;
 

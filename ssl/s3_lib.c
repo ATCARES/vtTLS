@@ -4033,11 +4033,10 @@ int ssl3_put_cipher_by_char(const SSL_CIPHER *c, unsigned char *p)
     return (2);
 }
 
-/* AMJ-SUPERTLS -- ssl3_choose_sec_cipher
+/*
+ * AMJ-SUPERTLS -- ssl3_choose_sec_cipher
  *
- * This function is, as it is, extremely inneficient
- *
- * */
+ */
 SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
         STACK_OF(SSL_CIPHER) *srvr)
 {
@@ -4219,7 +4218,6 @@ SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
         if ((c->algorithm_ssl & SSL_TLSV1_2) && !SSL_USE_TLS1_2_CIPHERS(s))
             continue;
 
-        /*TODO: I need to do this for the second (or k) certificate(s) */
         ssl_set_cert_masks(cert, c);
         mask_k = cert->mask_k;
         mask_a = cert->mask_a;
