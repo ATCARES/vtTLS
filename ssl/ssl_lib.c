@@ -2481,13 +2481,19 @@ void ssl_set_cert_masks(CERT *c, const SSL_CIPHER *cipher)
 
 #ifndef OPENSSL_NO_EC
 
-int ssl_check_srvr_ecc_cert_and_alg(X509 *x, SSL *s)
+int ssl_check_srvr_ecc_cert_and_alg(X509 *x, SSL *s, int n_cert)
 {
     unsigned long alg_k, alg_a;
     EVP_PKEY *pkey = NULL;
     int keysize = 0;
     int signature_nid = 0, md_nid = 0, pk_nid = 0;
-    const SSL_CIPHER *cs = s->s3->tmp.new_cipher;
+    const SSL_CIPHER *cs;
+
+    if (n_cert == 1)
+    	cs = s->s3->tmp.new_cipher;
+    else if (n_cert == 2)
+    	cs = s->s3->tmp.new_cipher_sec;
+
 
     alg_k = cs->algorithm_mkey;
     alg_a = cs->algorithm_auth;

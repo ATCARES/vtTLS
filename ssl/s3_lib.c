@@ -3451,7 +3451,7 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
                                     parg);
 
     case SSL_CTRL_GET_SHARED_CURVE:
-        return tls1_shared_curve(s, larg);
+        return tls1_shared_curve(s, larg, 1);
 
 # ifndef OPENSSL_NO_ECDH
     case SSL_CTRL_SET_ECDH_AUTO:

@@ -532,7 +532,6 @@ struct ssl_session_st {
     /* The cert is the certificate used to establish this connection */
     struct sess_cert_st /* SESS_CERT */ *sess_cert;
     struct sess_cert_st /* SESS_CERT */ *sess_cert_sec;
-
     /*
      * This is the cert for the other end. On clients, it will be the same as
      * sess_cert->peer_key->x509 (the latter is not enough as sess_cert is

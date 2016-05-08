@@ -496,6 +496,10 @@ int ssl3_accept(SSL *s)
                 ret = ssl3_send_server_key_exchange(s);
                 if (ret <= 0)
                     goto end;
+                ret = ssl3_send_sec_server_key_exchange(s);
+                if (ret <= 0)
+                     goto end;
+
             } else
                 skip = 1;
 
@@ -1462,9 +1466,10 @@ int ssl3_get_client_hello(SSL *s)
 
         /* AMJ-SUPERTLS-IMPLEMENTATION: Dummy implementation of choosing a second cipher */
         c_sec = ssl3_choose_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
-        s->s3->tmp.new_cipher_sec = c_sec;
+        s->s3->tmp.new_cipher = c_sec;
 
         c_test = ssl3_choose_sec_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
+        s->s3->tmp.new_cipher_sec = c_test;
 
         printf("[AMJ-SUPERTLS] %s: Chosen cipher -- %s\n", __func__, c->name);
         printf("[AMJ-SUPERTLS] %s: Chosen second cipher -- %s\n", __func__, c_sec->name);
@@ -1701,6 +1706,9 @@ int ssl3_send_server_key_exchange(SSL *s)
     EVP_MD_CTX md_ctx;
 
     EVP_MD_CTX_init(&md_ctx);
+
+    printf("[AMJ-SUPERTLS] %s: Sending first ServerKeyExchange\n", __func__);
+
     if (s->state == SSL3_ST_SW_KEY_EXCH_A) {
         type = s->s3->tmp.new_cipher->algorithm_mkey;
         cert = s->cert;
@@ -1782,7 +1790,7 @@ int ssl3_send_server_key_exchange(SSL *s)
             ecdhp = cert->ecdh_tmp;
             if (s->cert->ecdh_tmp_auto) {
                 /* Get NID of appropriate shared curve */
-                int nid = tls1_shared_curve(s, -2);
+                int nid = tls1_shared_curve(s, -2, 1);
                 if (nid != NID_undef)
                     ecdhp = EC_KEY_new_by_curve_name(nid);
             } else if ((ecdhp == NULL) && s->cert->ecdh_tmp_cb) {
@@ -1862,7 +1870,7 @@ int ssl3_send_server_key_exchange(SSL *s)
             encodedlen = EC_POINT_point2oct(group,
                                             EC_KEY_get0_public_key(ecdh),
                                             POINT_CONVERSION_UNCOMPRESSED,
-                                            NULL, 0, NULL);
+											ssl3_send_server_key_exchange         NULL, 0, NULL);
 
             encodedPoint = (unsigned char *)
                 OPENSSL_malloc(encodedlen * sizeof(unsigned char));
@@ -2078,6 +2086,439 @@ int ssl3_send_server_key_exchange(SSL *s)
                 }
                 s2n(i, p);
                 n += i + 2;
+                if (SSL_USE_SIGALGS(s))
+                    n += 2;
+            } else {
+                /* Is this error check actually needed? */
+                al = SSL_AD_HANDSHAKE_FAILURE;
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       SSL_R_UNKNOWN_PKEY_TYPE);
+                goto f_err;
+            }
+        }
+
+        ssl_set_handshake_header(s, SSL3_MT_SERVER_KEY_EXCHANGE, n);
+    }
+
+    s->state = SSL3_ST_SW_KEY_EXCH_B;
+    EVP_MD_CTX_cleanup(&md_ctx);
+    return ssl_do_write(s);
+ f_err:
+    ssl3_send_alert(s, SSL3_AL_FATAL, al);
+ err:
+#ifndef OPENSSL_NO_ECDH
+    if (encodedPoint != NULL)
+        OPENSSL_free(encodedPoint);
+    BN_CTX_free(bn_ctx);
+#endif
+    EVP_MD_CTX_cleanup(&md_ctx);
+    s->state = SSL_ST_ERR;
+    return (-1);
+}
+
+int ssl3_send_sec_server_key_exchange(SSL *s)
+{
+#ifndef OPENSSL_NO_RSA
+    unsigned char *q;
+    int j, num;
+    RSA *rsa_sec;
+    unsigned char md_buf[MD5_DIGEST_LENGTH + SHA_DIGEST_LENGTH];
+    unsigned int u;
+#endif
+#ifndef OPENSSL_NO_DH
+    DH *dh_sec = NULL, *dhp_sec;
+#endif
+#ifndef OPENSSL_NO_ECDH
+    EC_KEY *ecdh_sec = NULL, *ecdhp_sec;
+    unsigned char *encodedPoint = NULL;
+    int encodedlen = 0;
+    int curve_id = 0;
+    BN_CTX *bn_ctx = NULL;
+#endif
+    EVP_PKEY *pkey_sec;
+    const EVP_MD *md = NULL;
+    unsigned char *p, *d;
+    int al, i;
+    unsigned long type_sec;
+    int n;
+    CERT *cert_sec;
+    BIGNUM *r[4];
+    int nr[4], kn;
+    BUF_MEM *buf;
+    EVP_MD_CTX md_ctx;
+
+    printf("[AMJ-SUPERTLS] %s: Sending second ServerKeyExchange\n", __func__);
+
+    EVP_MD_CTX_init(&md_ctx);
+
+    if (s->state == SSL3_ST_SW_KEY_EXCH_A) {
+        type_sec = s->s3->tmp.new_cipher_sec->algorithm_mkey;
+        cert_sec = s->cert_sec;
+
+        buf = s->init_buf;
+
+        r[0] = r[1] = r[2] = r[3] = NULL;
+        n = 0;
+#ifndef OPENSSL_NO_RSA
+        if (type_sec & SSL_kRSA) {
+            rsa_sec = cert_sec->rsa_tmp;
+            if ((rsa_sec == NULL) && (s->cert_sec->rsa_tmp_cb != NULL)) {
+                rsa_sec = s->cert_sec->rsa_tmp_cb(s, SSL_C_IS_EXPORT(s->s3-> tmp.new_cipher_sec),
+                                                 SSL_C_EXPORT_PKEYLENGTH(s->s3->tmp.new_cipher_sec));
+                if (rsa_sec == NULL) {
+                    al = SSL_AD_HANDSHAKE_FAILURE;
+                    SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                           SSL_R_ERROR_GENERATING_TMP_RSA_KEY);
+                    goto f_err;
+                }
+                RSA_up_ref(rsa_sec);
+                cert_sec->rsa_tmp = rsa_sec;
+            }
+            if (rsa_sec == NULL) {
+                al = SSL_AD_HANDSHAKE_FAILURE;
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       SSL_R_MISSING_TMP_RSA_KEY);
+                goto f_err;
+            }
+            r[0] = rsa_sec->n;
+            r[1] = rsa_sec->e;
+            s->s3->tmp.use_sec_rsa_tmp = 1;
+        } else
+#endif
+#ifndef OPENSSL_NO_DH
+        if (type_sec & SSL_kEDH) {
+            dhp_sec = cert_sec->dh_tmp;
+            if ((dhp_sec == NULL) && (s->cert_sec->dh_tmp_cb != NULL))
+                dhp_sec = s->cert_sec->dh_tmp_cb(s, SSL_C_IS_EXPORT(s->s3->tmp.new_cipher_sec),
+                                                SSL_C_EXPORT_PKEYLENGTH(s->s3->tmp.new_cipher_sec));
+            if (dhp_sec == NULL) {
+                al = SSL_AD_HANDSHAKE_FAILURE;
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       SSL_R_MISSING_TMP_DH_KEY);
+                goto f_err;
+            }
+
+            if (s->s3->tmp.dh_sec != NULL) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       ERR_R_INTERNAL_ERROR);
+                goto err;
+            }
+
+            if ((dh_sec = DHparams_dup(dhp_sec)) == NULL) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_R_DH_LIB);
+                goto err;
+            }
+
+            s->s3->tmp.dh_sec = dh_sec;
+            if (!DH_generate_key(dh_sec)) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_R_DH_LIB);
+                goto err;
+            }
+            r[0] = dh_sec->p;
+            r[1] = dh_sec->g;
+            r[2] = dh_sec->pub_key;
+        } else
+#endif
+#ifndef OPENSSL_NO_ECDH
+        if (type_sec & SSL_kEECDH) {
+            const EC_GROUP *group;
+
+            ecdhp_sec = cert_sec->ecdh_tmp;
+            if (s->cert_sec->ecdh_tmp_auto) {
+                /* Get NID of appropriate shared curve */
+                int nid = tls1_shared_curve(s, -2, 2);
+                if (nid != NID_undef)
+                    ecdhp_sec = EC_KEY_new_by_curve_name(nid);
+            } else if ((ecdhp_sec == NULL) && s->cert_sec->ecdh_tmp_cb) {
+                ecdhp_sec = s->cert_sec->ecdh_tmp_cb(s, SSL_C_IS_EXPORT(s->s3->tmp.new_cipher_sec),
+                                                        SSL_C_EXPORT_PKEYLENGTH(s->s3->tmp.new_cipher_sec));
+            }
+            if (ecdhp_sec == NULL) {
+                al = SSL_AD_HANDSHAKE_FAILURE;
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       SSL_R_MISSING_TMP_ECDH_KEY);
+                goto f_err;
+            }
+
+            if (s->s3->tmp.ecdh_sec != NULL) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       ERR_R_INTERNAL_ERROR);
+                goto err;
+            }
+
+            /* Duplicate the ECDH structure. */
+            if (ecdhp_sec == NULL) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_R_ECDH_LIB);
+                goto err;
+            }
+            if (s->cert_sec->ecdh_tmp_auto)
+                ecdh_sec = ecdhp_sec;
+            else if ((ecdh_sec = EC_KEY_dup(ecdhp_sec)) == NULL) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_R_ECDH_LIB);
+                goto err;
+            }
+
+            s->s3->tmp.ecdh_sec = ecdh_sec;
+            if ((EC_KEY_get0_public_key(ecdh_sec) == NULL) ||
+                (EC_KEY_get0_private_key(ecdh_sec) == NULL) ||
+                (s->options & SSL_OP_SINGLE_ECDH_USE)) {
+                if (!EC_KEY_generate_key(ecdh_sec)) {
+                    SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                           ERR_R_ECDH_LIB);
+                    goto err;
+                }
+            }
+
+            if (((group = EC_KEY_get0_group(ecdh_sec)) == NULL) ||
+                (EC_KEY_get0_public_key(ecdh_sec) == NULL) ||
+                (EC_KEY_get0_private_key(ecdh_sec) == NULL)) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_R_ECDH_LIB);
+                goto err;
+            }
+
+            if (SSL_C_IS_EXPORT(s->s3->tmp.new_cipher_sec) &&
+                (EC_GROUP_get_degree(group) > 163)) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       SSL_R_ECGROUP_TOO_LARGE_FOR_CIPHER);
+                goto err;
+            }
+
+            /*
+             * XXX: For now, we only support ephemeral ECDH keys over named
+             * (not generic) curves. For supported named curves, curve_id is
+             * non-zero.
+             */
+            if ((curve_id = tls1_ec_nid2curve_id(EC_GROUP_get_curve_name(group)))
+                == 0) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       SSL_R_UNSUPPORTED_ELLIPTIC_CURVE);
+                goto err;
+            }
+
+            /*
+             * Encode the public key. First check the size of encoding and
+             * allocate memory accordingly.
+             */
+            encodedlen = EC_POINT_point2oct(group,
+                                            EC_KEY_get0_public_key(ecdh_sec),
+                                            POINT_CONVERSION_UNCOMPRESSED,
+											ssl3_send_server_key_exchange         NULL, 0, NULL);
+
+            encodedPoint = (unsigned char *)
+                OPENSSL_malloc(encodedlen * sizeof(unsigned char));
+            bn_ctx = BN_CTX_new();
+            if ((encodedPoint == NULL) || (bn_ctx == NULL)) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       ERR_R_MALLOC_FAILURE);
+                goto err;
+            }
+
+            encodedlen = EC_POINT_point2oct(group,
+                                            EC_KEY_get0_public_key(ecdh_sec),
+                                            POINT_CONVERSION_UNCOMPRESSED,
+                                            encodedPoint, encodedlen, bn_ctx);
+
+            if (encodedlen == 0) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_R_ECDH_LIB);
+                goto err;
+            }
+
+            BN_CTX_free(bn_ctx);
+            bn_ctx = NULL;
+
+            /*
+             * XXX: For now, we only support named (not generic) curves in
+             * ECDH ephemeral key exchanges. In this situation, we need four
+             * additional bytes to encode the entire ServerECDHParams
+             * structure.
+             */
+            n = 4 + encodedlen;
+
+            /*
+             * We'll generate the serverKeyExchange message explicitly so we
+             * can set these to NULLs
+             */
+            r[0] = NULL;
+            r[1] = NULL;
+            r[2] = NULL;
+            r[3] = NULL;
+        } else
+#endif                          /* !OPENSSL_NO_ECDH */
+#ifndef OPENSSL_NO_PSK
+        /* AMJ-SUPERTLS: TODO: Diversify*/
+        if (type_sec & SSL_kPSK) {
+            /*
+             * reserve size for record length and PSK identity hint
+             */
+            n += 2 + strlen(s->ctx->psk_identity_hint);
+        } else
+#endif                          /* !OPENSSL_NO_PSK */
+#ifndef OPENSSL_NO_SRP
+        /* AMJ-SUPERTLS: TODO: Diversify*/
+        if (type_sec & SSL_kSRP) {
+            if ((s->srp_ctx.N == NULL) ||
+                (s->srp_ctx.g == NULL) ||
+                (s->srp_ctx.s == NULL) || (s->srp_ctx.B == NULL)) {
+                SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                       SSL_R_MISSING_SRP_PARAM);
+                goto err;
+            }
+            r[0] = s->srp_ctx.N;
+            r[1] = s->srp_ctx.g;
+            r[2] = s->srp_ctx.s;
+            r[3] = s->srp_ctx.B;
+        } else
+#endif
+        {
+            al = SSL_AD_HANDSHAKE_FAILURE;
+            SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                   SSL_R_UNKNOWN_KEY_EXCHANGE_TYPE);
+            goto f_err;
+        }
+
+        for (i = 0; i < 4 && r[i] != NULL; i++) {
+            nr[i] = BN_num_bytes(r[i]);
+#ifndef OPENSSL_NO_SRP
+            if ((i == 2) && (type_sec & SSL_kSRP))
+                n += 1 + nr[i];
+            else
+#endif
+                n += 2 + nr[i];
+        }
+
+        if (!(s->s3->tmp.new_cipher_sec->algorithm_auth & (SSL_aNULL | SSL_aSRP))
+            && !(s->s3->tmp.new_cipher_sec->algorithm_mkey & SSL_kPSK)) {
+            if ((pkey_sec = ssl_get_sign_pkey(s, s->s3->tmp.new_cipher_sec, &md)) == NULL) {
+                al = SSL_AD_DECODE_ERROR;
+                goto f_err;
+            }
+            kn = EVP_PKEY_size(pkey_sec);
+        } else {
+            pkey_sec = NULL;
+            kn = 0;
+        }
+
+        if (!BUF_MEM_grow_clean(buf, n + SSL_HM_HEADER_LENGTH(s) + kn)) {
+            SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_BUF);
+            goto err;
+        }
+
+        d = p = ssl_handshake_start(s);
+
+        for (i = 0; i < 4 && r[i] != NULL; i++) {
+#ifndef OPENSSL_NO_SRP
+            if ((i == 2) && (type_sec & SSL_kSRP)) {
+                *p = nr[i];
+                p++;
+            } else
+#endif
+                s2n(nr[i], p);
+            BN_bn2bin(r[i], p);
+            p += nr[i];
+        }
+
+#ifndef OPENSSL_NO_ECDH
+        if (type_sec & SSL_kEECDH) {
+            /*
+             * XXX: For now, we only support named (not generic) curves. In
+             * this situation, the serverKeyExchange message has: [1 byte
+             * CurveType], [2 byte CurveName] [1 byte length of encoded
+             * point], followed by the actual encoded point itself
+             */
+            *p = NAMED_CURVE_TYPE;
+            p += 1;
+            *p = 0;
+            p += 1;
+            *p = curve_id;
+            p += 1;
+            *p = encodedlen;
+            p += 1;
+            memcpy((unsigned char *)p,
+                   (unsigned char *)encodedPoint, encodedlen);
+            OPENSSL_free(encodedPoint);
+            encodedPoint = NULL;
+            p += encodedlen;
+        }
+#endif
+
+#ifndef OPENSSL_NO_PSK
+        /* AMJ-SUPERTLS: TODO: Diversify*/
+        if (type_sec & SSL_kPSK) {
+            /* copy PSK identity hint */
+            s2n(strlen(s->ctx->psk_identity_hint), p);
+            strncpy((char *)p, s->ctx->psk_identity_hint,
+                    strlen(s->ctx->psk_identity_hint));
+            p += strlen(s->ctx->psk_identity_hint);
+        }
+#endif
+
+        /* not anonymous */
+        if (pkey_sec != NULL) {
+            /*
+             * n is the length of the params, they start at &(d[4]) and p
+             * points to the space at the end.
+             */
+#ifndef OPENSSL_NO_RSA
+            if (pkey_sec->type == EVP_PKEY_RSA && !SSL_USE_SIGALGS(s)) {
+                /* AMJ-SUPERTLS TODO: Check SSL_USE_SIGALGS */
+                q = md_buf;
+                j = 0;
+                for (num = 2; num > 0; num--) {
+                    EVP_MD_CTX_set_flags(&md_ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+                    if (EVP_DigestInit_ex(&md_ctx,
+                                          (num == 2) ? s->ctx->md5
+                                                     : s->ctx->sha1,
+                                          NULL) <= 0
+                        || EVP_DigestUpdate(&md_ctx, &(s->s3->client_random[0]), SSL3_RANDOM_SIZE) <= 0
+                        || EVP_DigestUpdate(&md_ctx, &(s->s3->server_random[0]), SSL3_RANDOM_SIZE) <= 0
+                        || EVP_DigestUpdate(&md_ctx, d, n) <= 0
+                        || EVP_DigestFinal_ex(&md_ctx, q, (unsigned int *)&i) <= 0) {
+
+                        SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                               ERR_LIB_EVP);
+                        al = SSL_AD_INTERNAL_ERROR;
+                        goto f_err;
+                    }
+                    q += i;
+                    j += i;
+                }
+                if (RSA_sign(NID_md5_sha1, md_buf, j,
+                             &(p[2]), &u, pkey_sec->pkey.rsa) <= 0) {
+                    SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_RSA);
+                    goto err;
+                }
+                s2n(u, p);
+                n += u + 2;
+            } else
+#endif
+            if (md) {
+                /* send signature algorithm */
+                /* AMJ-SUPERTLS TODO: Check SSL_USE_SIGALGS */
+                if (SSL_USE_SIGALGS(s)) {
+                    if (!tls12_get_sigandhash(p, pkey_sec, md)) {
+                        /* Should never happen */
+                        al = SSL_AD_INTERNAL_ERROR;
+                        SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE,
+                               ERR_R_INTERNAL_ERROR);
+                        goto f_err;
+                    }
+                    p += 2;
+                }
+#ifdef SSL_DEBUG
+                fprintf(stderr, "Using hash %s\n", EVP_MD_name(md));
+#endif
+                if (EVP_SignInit_ex(&md_ctx, md, NULL) <= 0
+                        || EVP_SignUpdate(&md_ctx, &(s->s3->client_random[0]), SSL3_RANDOM_SIZE) <= 0
+                        || EVP_SignUpdate(&md_ctx, &(s->s3->server_random[0]), SSL3_RANDOM_SIZE) <= 0
+                        || EVP_SignUpdate(&md_ctx, d, n) <= 0
+                        || EVP_SignFinal(&md_ctx, &(p[2]), (unsigned int *)&i, pkey_sec) <= 0) {
+                    SSLerr(SSL_F_SSL3_SEND_SERVER_KEY_EXCHANGE, ERR_LIB_EVP);
+                    al = SSL_AD_INTERNAL_ERROR;
+                    goto f_err;
+                }
+                s2n(i, p);
+                n += i + 2;
+                /* AMJ-SUPERTLS TODO: Check SSL_USE_SIGALGS */
                 if (SSL_USE_SIGALGS(s))
                     n += 2;
             } else {
@@ -3410,14 +3851,14 @@ int ssl3_send_server_certificate(SSL *s)
             }
         }
 
-         /*
+         /* TODO: FIX
           * cpk_sec was not being well retrieved due to the fact that c_sec and new_cipher_sec
           * are not related. The current second cipher is still being chosen according to the
           * first certificate
           *
           */
-        // cpk_sec = ssl_get_server_send_pkey_sec(s);
-        cpk_sec = ssl_get_server_send_pkey(s); /* TODO: Uncomment the line above */
+        cpk_sec = ssl_get_server_send_pkey_sec(s);
+        //cpk_sec = ssl_get_server_send_pkey(s);
         if (cpk_sec == NULL) {
             /* VRS: allow null cert if auth == KRB5 */
             if ((s->s3->tmp.new_cipher_sec->algorithm_auth != SSL_aKRB5) ||
@@ -3432,11 +3873,11 @@ int ssl3_send_server_certificate(SSL *s)
         if(cpk->x509->name != NULL)
         	printf("[AMJ-SUPERTLS] %s: cpk:     %s\n", __func__, cpk->x509->name);
         else
-        	printf("[AMJ-SUPERTLS] %s: cpk is NULL.\n");
+        	printf("[AMJ-SUPERTLS] %s: cpk is NULL.\n", __func__);
         if (cpk_sec->x509->name != NULL)
         	printf("[AMJ-SUPERTLS] %s: cpk_sec: %s\n", __func__, cpk_sec->x509->name);
         else
-        	printf("[AMJ-SUPERTLS] %s: cpk_sec is NULL.\n");
+        	printf("[AMJ-SUPERTLS] %s: cpk_sec is NULL.\n", __func__);
 
         if (!ssl3_output_certs_chains(s, cpk, cpk_sec)) {
             SSLerr(SSL_F_SSL3_SEND_SERVER_CERTIFICATE, ERR_R_INTERNAL_ERROR);

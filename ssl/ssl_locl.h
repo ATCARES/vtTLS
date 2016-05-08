@@ -1286,8 +1286,11 @@ int ssl3_send_client_certificate(SSL *s);
 int ssl_do_client_cert_cb(SSL *s, X509 **px509, EVP_PKEY **ppkey);
 int ssl3_send_client_key_exchange(SSL *s);
 int ssl3_get_key_exchange(SSL *s);
+int ssl3_get_sec_key_exchange(SSL *s);
 int ssl3_get_server_certificate(SSL *s);
 int ssl3_check_cert_and_algorithm(SSL *s);
+int ssl3_check_sec_cert_and_algorithm(SSL *s);
+
 #  ifndef OPENSSL_NO_TLSEXT
 #   ifndef OPENSSL_NO_NEXTPROTONEG
 int ssl3_send_next_proto(SSL *s);
@@ -1301,6 +1304,7 @@ int ssl3_get_client_hello(SSL *s);
 int ssl3_send_server_hello(SSL *s);
 int ssl3_send_hello_request(SSL *s);
 int ssl3_send_server_key_exchange(SSL *s);
+int ssl3_send_sec_server_key_exchange(SSL *s);
 int ssl3_send_certificate_request(SSL *s);
 int ssl3_send_server_done(SSL *s);
 int ssl3_get_client_certificate(SSL *s);
@@ -1358,7 +1362,7 @@ int ssl3_alert_code(int code);
 int ssl_ok(SSL *s);
 
 #  ifndef OPENSSL_NO_ECDH
-int ssl_check_srvr_ecc_cert_and_alg(X509 *x, SSL *s);
+int ssl_check_srvr_ecc_cert_and_alg(X509 *x, SSL *s, int n_cert);
 #  endif
 
 SSL_COMP *ssl3_comp_find(STACK_OF(SSL_COMP) *sk, int n);
@@ -1367,7 +1371,8 @@ SSL_COMP *ssl3_comp_find(STACK_OF(SSL_COMP) *sk, int n);
 int tls1_ec_curve_id2nid(int curve_id);
 int tls1_ec_nid2curve_id(int nid);
 int tls1_check_curve(SSL *s, const unsigned char *p, size_t len);
-int tls1_shared_curve(SSL *s, int nmatch);
+int tls1_check_sec_curve(SSL *s, const unsigned char *p, size_t len);
+int tls1_shared_curve(SSL *s, int nmatch, int n_cert);
 int tls1_set_curves(unsigned char **pext, size_t *pextlen,
                     int *curves, size_t ncurves);
 int tls1_set_curves_list(unsigned char **pext, size_t *pextlen,
@@ -1435,8 +1440,11 @@ long ssl_get_algorithm2(SSL *s);
 int tls1_save_sigalgs(SSL *s, const unsigned char *data, int dsize);
 int tls1_process_sigalgs(SSL *s);
 size_t tls12_get_psigalgs(SSL *s, const unsigned char **psigs);
+size_t tls12_get_sec_psigalgs(SSL *s, const unsigned char **psigs);
 int tls12_check_peer_sigalg(const EVP_MD **pmd, SSL *s,
                             const unsigned char *sig, EVP_PKEY *pkey);
+int tls12_check_sec_peer_sigalg(const EVP_MD **pmd, SSL *s,
+                            const unsigned char *sig, EVP_PKEY *pkey_sec);
 void ssl_set_client_disabled(SSL *s);
 
 int ssl_add_clienthello_use_srtp_ext(SSL *s, unsigned char *p, int *len,
