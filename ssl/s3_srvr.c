@@ -3429,8 +3429,14 @@ int ssl3_send_server_certificate(SSL *s)
             }
         }
 
-        printf("[AMJ-SUPERTLS] %s: cpk:     %s\n", __func__, cpk->x509->name);
-        printf("[AMJ-SUPERTLS] %s: cpk_sec: %s\n", __func__, cpk_sec->x509->name);
+        if(cpk->x509->name != NULL)
+        	printf("[AMJ-SUPERTLS] %s: cpk:     %s\n", __func__, cpk->x509->name);
+        else
+        	printf("[AMJ-SUPERTLS] %s: cpk is NULL.\n");
+        if (cpk_sec->x509->name != NULL)
+        	printf("[AMJ-SUPERTLS] %s: cpk_sec: %s\n", __func__, cpk_sec->x509->name);
+        else
+        	printf("[AMJ-SUPERTLS] %s: cpk_sec is NULL.\n");
 
         if (!ssl3_output_certs_chains(s, cpk, cpk_sec)) {
             SSLerr(SSL_F_SSL3_SEND_SERVER_CERTIFICATE, ERR_R_INTERNAL_ERROR);
