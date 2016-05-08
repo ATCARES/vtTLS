@@ -337,6 +337,9 @@ unsigned long ssl3_output_certs_chains(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_se
     l2n3(l, p);
     l += 3;
     ssl_set_handshake_header(s, SSL3_MT_CERTIFICATE, l);
+
+    printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
+
     return l + SSL_HM_HEADER_LENGTH(s);
 }
 

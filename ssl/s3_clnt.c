@@ -1248,6 +1248,12 @@ int ssl3_get_server_certificate(SSL *s)
                                  * KRB5 */
 
 
+    X509 *x_sec = NULL;
+    STACK_OF(X509) *sk_sec = NULL;
+    SESS_CERT *sc_sec;
+    EVP_PKEY *pkey_sec = NULL;
+    int need_cert_sec = 1;
+
 
     n = s->method->ssl_get_message(s,
                                    SSL3_ST_CR_CERT_A,
@@ -1276,6 +1282,11 @@ int ssl3_get_server_certificate(SSL *s)
         goto err;
     }
 
+    if ((sk_sec = sk_X509_new_null()) == NULL) {
+        SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
+
     n2l3(p, llen);
 
     printf("[AMJ-SUPERTLS] %s: llen=%lu\n", __func__, llen);
@@ -1287,6 +1298,7 @@ int ssl3_get_server_certificate(SSL *s)
     }
     for (nc = 0; nc < llen;) {
         n2l3(p, l);
+        printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
         if ((l + nc + 3) > llen) {
             al = SSL_AD_DECODE_ERROR;
             SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
@@ -1317,6 +1329,40 @@ int ssl3_get_server_certificate(SSL *s)
         x = NULL;
         nc += l + 3;
         p = q;
+
+        /******* SECOND CERTIFICATE RETRIEVAL ********/
+        n2l3(p, l);
+        printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
+        if ((l + nc + 3) > llen) {
+        	al = SSL_AD_DECODE_ERROR;
+			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
+				   SSL_R_CERT_LENGTH_MISMATCH);
+			goto f_err;
+		}
+
+		q = p;
+		/* d2i_X509() attempts to decode len bytes at *in.
+		 * If successful a pointer to the X509 structure is returned.
+		 * If an error occurred then NULL is returned.*/
+		x_sec = d2i_X509(NULL, &q, l);
+		if (x_sec == NULL) {
+			al = SSL_AD_BAD_CERTIFICATE;
+			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, ERR_R_ASN1_LIB);
+			goto f_err;
+		}
+		if (q != (p + l)) {
+			al = SSL_AD_DECODE_ERROR;
+			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
+				   SSL_R_CERT_LENGTH_MISMATCH);
+			goto f_err;
+		}
+		if (!sk_X509_push(sk_sec, x_sec)) {
+			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, ERR_R_MALLOC_FAILURE);
+			goto err;
+		}
+		x_sec = NULL;
+		nc += l + 3;
+		p = q;
     }
 
     i = ssl_verify_cert_chain(s, sk);
@@ -1331,33 +1377,64 @@ int ssl3_get_server_certificate(SSL *s)
                SSL_R_CERTIFICATE_VERIFY_FAILED);
         goto f_err;
     }
+
+    i = ssl_verify_cert_chain(s, sk_sec);
+    if ((s->verify_mode != SSL_VERIFY_NONE) && (i <= 0)
+#ifndef OPENSSL_NO_KRB5
+		&& !((s->s3->tmp.new_cipher_sec->algorithm_mkey & SSL_kKRB5) &&
+			  (s->s3->tmp.new_cipher_sec->algorithm_auth & SSL_aKRB5))
+#endif                          /* OPENSSL_NO_KRB5 */
+		) {
+		al = ssl_verify_alarm_type(s->verify_result);
+		SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
+				SSL_R_CERTIFICATE_VERIFY_FAILED);
+		 goto f_err;
+	 }
+
     ERR_clear_error();          /* but we keep s->verify_result */
 
     sc = ssl_sess_cert_new();
+    sc_sec = ssl_sess_cert_new();
+
     if (sc == NULL)
         goto err;
+    if (sc_sec == NULL)
+    	goto err;
 
     if (s->session->sess_cert)
         ssl_sess_cert_free(s->session->sess_cert);
     s->session->sess_cert = sc;
 
+    if (s->session->sess_cert_sec)
+        ssl_sess_cert_free(s->session->sess_cert_sec);
+    s->session->sess_cert_sec = sc_sec;
+
     sc->cert_chain = sk;
+    sc_sec->cert_chain = sk_sec;
     /*
      * Inconsistency alert: cert_chain does include the peer's certificate,
      * which we don't include in s3_srvr.c
      */
     x = sk_X509_value(sk, 0);
     sk = NULL;
+    x_sec = sk_X509_value(sk_sec, 0);
+    sk_sec = NULL;
     /*
      * VRS 19990621: possible memory leak; sk=null ==> !sk_pop_free() @end
      */
 
     pkey = X509_get_pubkey(x);
+    pkey_sec = X509_get_pubkey(x_sec);
 
     /* VRS: allow null cert if auth == KRB5 */
     need_cert = ((s->s3->tmp.new_cipher->algorithm_mkey & SSL_kKRB5) &&
                  (s->s3->tmp.new_cipher->algorithm_auth & SSL_aKRB5))
         ? 0 : 1;
+
+    need_cert_sec = ((s->s3->tmp.new_cipher_sec->algorithm_mkey & SSL_kKRB5) &&
+                     (s->s3->tmp.new_cipher_sec->algorithm_auth & SSL_aKRB5))
+        ? 0 : 1;
+
 
 #ifdef KSSL_DEBUG
     fprintf(stderr, "pkey,x = %p, %p\n", pkey, x);
@@ -1376,9 +1453,26 @@ int ssl3_get_server_certificate(SSL *s)
         goto f_err;
     }
 
+    if (need_cert_sec && ((pkey_sec == NULL) || EVP_PKEY_missing_parameters(pkey_sec))) {
+        x_sec = NULL;
+        al = SSL3_AL_FATAL;
+        SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
+               SSL_R_UNABLE_TO_FIND_PUBLIC_KEY_PARAMETERS);
+        goto f_err;
+    }
+
     i = ssl_cert_type(x, pkey);
     if (need_cert && i < 0) {
         x = NULL;
+        al = SSL3_AL_FATAL;
+        SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
+               SSL_R_UNKNOWN_CERTIFICATE_TYPE);
+        goto f_err;
+    }
+
+    i = ssl_cert_type(x_sec, pkey_sec);
+    if (need_cert_sec && i < 0) {
+        x_sec = NULL;
         al = SSL3_AL_FATAL;
         SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
                SSL_R_UNKNOWN_CERTIFICATE_TYPE);
@@ -1419,7 +1513,41 @@ int ssl3_get_server_certificate(SSL *s)
     }
     s->session->verify_result = s->verify_result;
 
+    if (need_cert_sec) {
+    	int exp_idx = ssl_cipher_get_cert_index(s->s3->tmp.new_cipher_sec);
+		if (exp_idx >= 0 && i != exp_idx) {
+			x_sec = NULL;
+			al = SSL_AD_ILLEGAL_PARAMETER;
+			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
+				SSL_R_WRONG_CERTIFICATE_TYPE);
+			goto f_err;
+		}
+
+		sc_sec->peer_cert_type = i;
+		CRYPTO_add(&x_sec->references, 1, CRYPTO_LOCK_X509);
+
+		if (sc_sec->peer_pkeys[i].x509 != NULL)
+		 X509_free(sc_sec->peer_pkeys[i].x509);
+		sc_sec->peer_pkeys[i].x509 = x;
+		sc_sec->peer_key = &(sc->peer_pkeys[i]);
+
+		if (s->session->peer_sec != NULL)
+		 X509_free(s->session->peer_sec);
+		CRYPTO_add(&x_sec->references, 1, CRYPTO_LOCK_X509);
+		s->session->peer_sec = x_sec;
+
+    } else {
+		sc_sec->peer_cert_type = i;
+		sc_sec->peer_key = NULL;
+
+		if (s->session->peer_sec != NULL)
+		 X509_free(s->session->peer_sec);
+		s->session->peer_sec = NULL;
+    }
+    s->session->verify_result = s->verify_result;
+
     x = NULL;
+    x_sec = NULL;
     ret = 1;
     if (0) {
  f_err:
@@ -1429,8 +1557,12 @@ int ssl3_get_server_certificate(SSL *s)
     }
 
     EVP_PKEY_free(pkey);
+    EVP_PKEY_free(pkey_sec);
     X509_free(x);
+    X509_free(x_sec);
     sk_X509_pop_free(sk, X509_free);
+    sk_X509_pop_free(sk_sec, X509_free);
+
     return (ret);
 }
 

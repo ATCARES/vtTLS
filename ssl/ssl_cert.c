@@ -1090,6 +1090,8 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     STACK_OF(X509) *extra_certs, *extra_certs_sec;
     X509_STORE *chain_store, *chain_store_sec;
 
+    printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, *l);
+
     if (cpk)
         x = cpk->x509;
     else
@@ -1100,9 +1102,6 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     else
         chain_store = s->ctx->cert_store;
 
-    /*
-     * If we have a certificate specific chain use it, else use parent ctx.
-     */
     if (cpk && cpk->chain)
         extra_certs = cpk->chain;
     else
@@ -1120,8 +1119,18 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     else
     	x_sec = NULL;
 
-    if (s->cert_sec->chain_store)
-        chain_store_sec = s->cert_sec->chain_store;
+	/*
+	 * TODO: I am currently using the second certificate as a 'placeholder'.
+	 * I am sending the first certificate twice, just for now.
+	 *
+	 * See TODO in s3_srvr.c -- Im currently sending the first certificate twice
+	 * due to the fact that new_cipher_sec and cert_sec are not related
+	 *
+	 */
+    /*if (s->cert_sec->chain_store)
+        chain_store_sec = s->cert_sec->chain_store;*/
+    if (s->cert->chain_store)
+        chain_store_sec = s->cert->chain_store;
 	else
 		chain_store_sec = s->ctx->cert_store;
 
@@ -1134,6 +1143,8 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
         no_chain_sec = 1;
     else
         no_chain_sec = 0;
+
+    printf("[AMJ-SUPERTLS] %s: no_chain=%d; no_chain_sec=%d\n", __func__, no_chain, no_chain_sec);
 
     /* TLSv1 sends a chain with nothing in it, instead of an alert */
     if (!BUF_MEM_grow_clean(buf, 10)) {
@@ -1159,13 +1170,19 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
             for (i = 0; i < sk_X509_num(xs_ctx.chain); i++) {
                 x = sk_X509_value(xs_ctx.chain, i);
 
+                printf("[AMJ-SUPERTLS] %s: x-before: l=%lu\n", __func__, *l);
+
                 if (!ssl_add_cert_to_buf(buf, l, x)) {
                     X509_STORE_CTX_cleanup(&xs_ctx);
                     return 0;
                 }
+
+                printf("[AMJ-SUPERTLS] %s: x-after: l=%lu\n", __func__, *l);
+
             }
             X509_STORE_CTX_cleanup(&xs_ctx);
         }
+
     }
 
     /**** SECOND CERTIFICATE INCLUSION ****/
@@ -1189,14 +1206,21 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
             for (i = 0; i < sk_X509_num(xs_ctx_sec.chain); i++) {
                 x_sec = sk_X509_value(xs_ctx_sec.chain, i);
 
+                printf("[AMJ-SUPERTLS] %s: x_sec-before: l=%lu\n", __func__, *l);
+
                 if (!ssl_add_cert_to_buf(buf, l, x_sec)) {
                     X509_STORE_CTX_cleanup(&xs_ctx_sec);
                     return 0;
                 }
+
+                printf("[AMJ-SUPERTLS] %s: x_sec-after: l=%lu\n", __func__, *l);
+
             }
             X509_STORE_CTX_cleanup(&xs_ctx_sec);
         }
+
     }
+
 
     for (i = 0; i < sk_X509_num(extra_certs); i++) {
         x = sk_X509_value(extra_certs, i);
