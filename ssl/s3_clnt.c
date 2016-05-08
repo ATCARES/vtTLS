@@ -1238,13 +1238,13 @@ int ssl3_get_server_certificate(SSL *s)
 {
     int al, i, ok, ret = -1;
     unsigned long n, nc, llen, l;
-    X509 *x = NULL, *x_sec = NULL;
+    X509 *x = NULL;
     const unsigned char *q, *p;
     unsigned char *d;
-    STACK_OF(X509) *sk = NULL, *sk_sec = NULL;
-    SESS_CERT *sc, *sc_sec;
-    EVP_PKEY *pkey = NULL, *pkey_sec = NULL;
-    int need_cert = 1, need_cert_sec = 1;          /* VRS: 0=> will allow null cert if auth ==
+    STACK_OF(X509) *sk = NULL;
+    SESS_CERT *sc;
+    EVP_PKEY *pkey = NULL;
+    int need_cert = 1;          /* VRS: 0=> will allow null cert if auth ==
                                  * KRB5 */
 
 
@@ -1269,15 +1269,9 @@ int ssl3_get_server_certificate(SSL *s)
         SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, SSL_R_BAD_MESSAGE_TYPE);
         goto f_err;
     }
-
     p = d = (unsigned char *)s->init_msg;
 
     if ((sk = sk_X509_new_null()) == NULL) {
-        SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, ERR_R_MALLOC_FAILURE);
-        goto err;
-    }
-
-    if ((sk_sec = sk_X509_new_null()) == NULL) {
         SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -1293,7 +1287,6 @@ int ssl3_get_server_certificate(SSL *s)
     }
     for (nc = 0; nc < llen;) {
         n2l3(p, l);
-        printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
         if ((l + nc + 3) > llen) {
             al = SSL_AD_DECODE_ERROR;
             SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
@@ -1324,40 +1317,6 @@ int ssl3_get_server_certificate(SSL *s)
         x = NULL;
         nc += l + 3;
         p = q;
-
-        /* SECOND CERTIFICATE RETRIEVAL */
-        n2l3(p, l);
-		printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
-		if ((l + nc + 3) > llen) {
-			al = SSL_AD_DECODE_ERROR;
-			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
-				   SSL_R_CERT_LENGTH_MISMATCH);
-			goto f_err;
-		}
-
-		q = p;
-		/* d2i_X509() attempts to decode len bytes at *in.
-		 * If successful a pointer to the X509 structure is returned.
-		 * If an error occurred then NULL is returned.*/
-		x_sec = d2i_X509(NULL, &q, l);
-		if (x_sec == NULL) {
-			al = SSL_AD_BAD_CERTIFICATE;
-			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, ERR_R_ASN1_LIB);
-			goto f_err;
-		}
-		if (q != (p + l)) {
-			al = SSL_AD_DECODE_ERROR;
-			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
-				   SSL_R_CERT_LENGTH_MISMATCH);
-			goto f_err;
-		}
-		if (!sk_X509_push(sk_sec, x_sec)) {
-			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE, ERR_R_MALLOC_FAILURE);
-			goto err;
-		}
-		x_sec = NULL;
-		nc += l + 3;
-		p = q;
     }
 
     i = ssl_verify_cert_chain(s, sk);
@@ -1372,61 +1331,32 @@ int ssl3_get_server_certificate(SSL *s)
                SSL_R_CERTIFICATE_VERIFY_FAILED);
         goto f_err;
     }
-
-    i = ssl_verify_cert_chain(s, sk_sec);
-    if ((s->verify_mode != SSL_VERIFY_NONE) && (i <= 0)
-#ifndef OPENSSL_NO_KRB5
-        && !((s->s3->tmp.new_cipher_sec->algorithm_mkey & SSL_kKRB5) &&
-             (s->s3->tmp.new_cipher_sec->algorithm_auth & SSL_aKRB5))
-#endif                          /* OPENSSL_NO_KRB5 */
-        ) {
-        al = ssl_verify_alarm_type(s->verify_result);
-        SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
-               SSL_R_CERTIFICATE_VERIFY_FAILED);
-        goto f_err;
-    }
-
     ERR_clear_error();          /* but we keep s->verify_result */
 
     sc = ssl_sess_cert_new();
-    sc_sec = ssl_sess_cert_new();
     if (sc == NULL)
-        goto err;
-    if (sc_sec == NULL)
         goto err;
 
     if (s->session->sess_cert)
         ssl_sess_cert_free(s->session->sess_cert);
     s->session->sess_cert = sc;
 
-    if (s->session->sess_cert_sec)
-        ssl_sess_cert_free(s->session->sess_cert_sec);
-    s->session->sess_cert_sec = sc_sec;
-
     sc->cert_chain = sk;
-    sc_sec->cert_chain = sk_sec;
     /*
      * Inconsistency alert: cert_chain does include the peer's certificate,
      * which we don't include in s3_srvr.c
      */
     x = sk_X509_value(sk, 0);
     sk = NULL;
-    x_sec = sk_X509_value(sk_sec, 0);
-    sk_sec = NULL;
     /*
      * VRS 19990621: possible memory leak; sk=null ==> !sk_pop_free() @end
      */
 
     pkey = X509_get_pubkey(x);
-    pkey_sec = X509_get_pubkey(x_sec);
 
     /* VRS: allow null cert if auth == KRB5 */
     need_cert = ((s->s3->tmp.new_cipher->algorithm_mkey & SSL_kKRB5) &&
                  (s->s3->tmp.new_cipher->algorithm_auth & SSL_aKRB5))
-        ? 0 : 1;
-
-    need_cert_sec = ((s->s3->tmp.new_cipher_sec->algorithm_mkey & SSL_kKRB5) &&
-                     (s->s3->tmp.new_cipher_sec->algorithm_auth & SSL_aKRB5))
         ? 0 : 1;
 
 #ifdef KSSL_DEBUG
@@ -1446,26 +1376,9 @@ int ssl3_get_server_certificate(SSL *s)
         goto f_err;
     }
 
-    if (need_cert_sec && ((pkey_sec == NULL) || EVP_PKEY_missing_parameters(pkey_sec))) {
-        x_sec = NULL;
-        al = SSL3_AL_FATAL;
-        SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
-               SSL_R_UNABLE_TO_FIND_PUBLIC_KEY_PARAMETERS);
-        goto f_err;
-    }
-
     i = ssl_cert_type(x, pkey);
     if (need_cert && i < 0) {
         x = NULL;
-        al = SSL3_AL_FATAL;
-        SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
-               SSL_R_UNKNOWN_CERTIFICATE_TYPE);
-        goto f_err;
-    }
-
-    i = ssl_cert_type(x_sec, pkey_sec);
-    if (need_cert_sec && i < 0) {
-        x_sec = NULL;
         al = SSL3_AL_FATAL;
         SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
                SSL_R_UNKNOWN_CERTIFICATE_TYPE);
@@ -1506,42 +1419,7 @@ int ssl3_get_server_certificate(SSL *s)
     }
     s->session->verify_result = s->verify_result;
 
-    if (need_cert_sec) {
-        int exp_idx = ssl_cipher_get_cert_index(s->s3->tmp.new_cipher_sec);
-        if (exp_idx >= 0 && i != exp_idx) {
-            x_sec = NULL;
-            al = SSL_AD_ILLEGAL_PARAMETER;
-            SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
-                   SSL_R_WRONG_CERTIFICATE_TYPE);
-            goto f_err;
-        }
-        sc_sec->peer_cert_type = i;
-        CRYPTO_add(&x_sec->references, 1, CRYPTO_LOCK_X509);
-        /*
-         * Why would the following ever happen? We just created sc a couple
-         * of lines ago.
-         */
-        if (sc_sec->peer_pkeys[i].x509 != NULL)
-            X509_free(sc_sec->peer_pkeys[i].x509);
-        sc_sec->peer_pkeys[i].x509 = x;
-        sc_sec->peer_key = &(sc->peer_pkeys[i]);
-
-        if (s->session->peer_sec != NULL)
-            X509_free(s->session->peer_sec);
-        CRYPTO_add(&x_sec->references, 1, CRYPTO_LOCK_X509);
-        s->session->peer_sec = x_sec;
-    } else {
-        sc_sec->peer_cert_type = i;
-        sc_sec->peer_key = NULL;
-
-        if (s->session->peer_sec != NULL)
-            X509_free(s->session->peer_sec);
-        s->session->peer_sec = NULL;
-    }
-    s->session->verify_result = s->verify_result;
-
     x = NULL;
-    x_sec = NULL;
     ret = 1;
     if (0) {
  f_err:
@@ -1551,12 +1429,8 @@ int ssl3_get_server_certificate(SSL *s)
     }
 
     EVP_PKEY_free(pkey);
-    EVP_PKEY_free(pkey_sec);
     X509_free(x);
-    X509_free(x_sec);
     sk_X509_pop_free(sk, X509_free);
-    sk_X509_pop_free(sk_sec, X509_free);
-
     return (ret);
 }
 
@@ -1565,10 +1439,10 @@ int ssl3_get_key_exchange(SSL *s)
 #ifndef OPENSSL_NO_RSA
     unsigned char *q, md_buf[EVP_MAX_MD_SIZE * 2];
 #endif
-    EVP_MD_CTX md_ctx, md_ctx_sec;
+    EVP_MD_CTX md_ctx;
     unsigned char *param, *p;
     int al, j, ok;
-    long i, param_len, n, alg_k, alg_a, alg_k_sec, alg_a_sec;
+    long i, param_len, n, alg_k, alg_a;
     EVP_PKEY *pkey = NULL;
     const EVP_MD *md = NULL;
 #ifndef OPENSSL_NO_RSA
@@ -1586,7 +1460,6 @@ int ssl3_get_key_exchange(SSL *s)
 #endif
 
     EVP_MD_CTX_init(&md_ctx);
-    EVP_MD_CTX_init(&md_ctx_sec);
 
     /*
      * use same message size as in ssl3_get_certificate_request() as
@@ -1600,7 +1473,8 @@ int ssl3_get_key_exchange(SSL *s)
         return ((int)n);
 
     alg_k = s->s3->tmp.new_cipher->algorithm_mkey;
-    alg_k_sec = s->s3->tmp.new_cipher_sec->algorithm_mkey;
+    /* AMJ-SUPERTLS: TODO*/
+    /* alg_k_s = s->s3->tmp.new_cipher_sec->algorithm_mkey */
 
     if (s->s3->tmp.message_type != SSL3_MT_SERVER_KEY_EXCHANGE) {
         /*
@@ -1608,10 +1482,6 @@ int ssl3_get_key_exchange(SSL *s)
          * ciphersuite.
          */
         if (alg_k & (SSL_kDHE | SSL_kECDHE)) {
-            SSLerr(SSL_F_SSL3_GET_KEY_EXCHANGE, SSL_R_UNEXPECTED_MESSAGE);
-            al = SSL_AD_UNEXPECTED_MESSAGE;
-            goto f_err;
-        } else if (alg_k_sec & (SSL_kDHE | SSL_kECDHE)){
             SSLerr(SSL_F_SSL3_GET_KEY_EXCHANGE, SSL_R_UNEXPECTED_MESSAGE);
             al = SSL_AD_UNEXPECTED_MESSAGE;
             goto f_err;
@@ -1627,14 +1497,6 @@ int ssl3_get_key_exchange(SSL *s)
             if (s->ctx->psk_identity_hint)
                 OPENSSL_free(s->ctx->psk_identity_hint);
             s->ctx->psk_identity_hint = NULL;
-        }
-
-        /* AMJ-SUPERTLS TODO: Check this code... It is not 100% correct for sure */
-        if (alg_k_sec & SSL_kPSK) {
-            s->session->sess_cert_sec = ssl_sess_cert_new();
-            if (s->ctx->psk_sec_identity_hint)
-                OPENSSL_free(s->ctx->psk_sec_identity_hint);
-            s->ctx->psk_sec_identity_hint = NULL;
         }
 #endif
         s->s3->tmp.reuse_message = 1;
@@ -1665,36 +1527,10 @@ int ssl3_get_key_exchange(SSL *s)
         s->session->sess_cert = ssl_sess_cert_new();
     }
 
-    /**************** SECOND CERTIFICATE *********************/
-    if (s->session->sess_cert_sec != NULL) {
-#ifndef OPENSSL_NO_RSA
-        if (s->session->sess_cert_sec->peer_rsa_tmp != NULL) {
-            RSA_free(s->session->sess_cert_sec->peer_rsa_tmp);
-            s->session->sess_cert_sec->peer_rsa_tmp = NULL;
-        }
-#endif
-#ifndef OPENSSL_NO_DH
-        if (s->session->sess_cert_sec->peer_dh_tmp) {
-            DH_free(s->session->sess_cert_sec->peer_dh_tmp);
-            s->session->sess_cert_sec->peer_dh_tmp = NULL;
-        }
-#endif
-#ifndef OPENSSL_NO_ECDH
-        if (s->session->sess_cert_sec->peer_ecdh_tmp) {
-            EC_KEY_free(s->session->sess_cert_sec->peer_ecdh_tmp);
-            s->session->sess_cert_sec->peer_ecdh_tmp = NULL;
-        }
-#endif
-    } else {
-        s->session->sess_cert_sec = ssl_sess_cert_new();
-    }
-    /**************************************************************/
-
     /* Total length of the parameters including the length prefix */
     param_len = 0;
 
     alg_a = s->s3->tmp.new_cipher->algorithm_auth;
-    alg_a_sec = s->s3->tmp.new_cipher_sec->algorithm_auth;
 
     al = SSL_AD_DECODE_ERROR;
 

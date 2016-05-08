@@ -326,7 +326,6 @@ unsigned long ssl3_output_certs_chains(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_se
 {
     unsigned char *p;
     unsigned long l = 3 + SSL_HM_HEADER_LENGTH(s);
-    unsigned long l_sec;
 
     if (!ssl_add_certs_chain(s, cpk, cpk_sec, &l))
         return 0;
