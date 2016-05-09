@@ -713,13 +713,10 @@ int tls1_change_cipher_state(SSL *s, int which)
         }
     }
 
-    /*  TODO:
+    /*  AMJ-SUPERTLS TODO: Diversify
      *  I need a new function ssl_get_sec_algorithm2(s)
      *
      if (is_export_sec) {
-        /*
-         * In here I set both the read and write key/iv to the same value
-         * since only the correct one will be used :-).
 
         if (!tls1_PRF(ssl_get_sec_algorithm2(s),
                       exp_label_sec, exp_label_len_sec,

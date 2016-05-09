@@ -4044,16 +4044,16 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 	SSL_CIPHER *c, *ret, *deleted = NULL;
 	STACK_OF(SSL_CIPHER) *prio, *allow;
 	int i, ii, ok;
-	CERT *cert;
+	CERT *cert_sec;
 	unsigned long alg_k, alg_a, mask_k, mask_a, emask_k, emask_a;
 
 	/* Let's see which ciphers we can support */
 	if (s->cert_sec != NULL)
-		cert = s->cert_sec;
+		cert_sec = s->cert_sec;
 	else
 		return ssl3_choose_cipher(s, clnt, srvr);
 
-	if (s->options & SSL_OP_CIPHER_SERVER_PREFERENCE || tls1_suiteb(s)) {
+	if (s->options & SSL_OP_CIPHER_SERVER_PREFERENCE || tls1_sec_suiteb(s)) {
 		prio = srvr;
 		allow = clnt;
 	} else {
@@ -4070,11 +4070,11 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 		if ((c->algorithm_ssl & SSL_TLSV1_2) && !SSL_USE_TLS1_2_CIPHERS(s))
 			continue;
 
-		ssl_set_cert_masks(cert, c);
-		mask_k = cert->mask_k;
-		mask_a = cert->mask_a;
-		emask_k = cert->export_mask_k;
-		emask_a = cert->export_mask_a;
+		ssl_set_cert_masks(cert_sec, c);
+		mask_k = cert_sec->mask_k;
+		mask_a = cert_sec->mask_a;
+		emask_k = cert_sec->export_mask_k;
+		emask_a = cert_sec->export_mask_a;
 #ifndef OPENSSL_NO_SRP
 		if (s->srp_ctx.srp_Mask & SSL_kSRP) {
 			mask_k |= SSL_kSRP;
@@ -4083,13 +4083,6 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 			emask_a |= SSL_aSRP;
 		}
 #endif
-
-#ifdef KSSL_DEBUG
-		/*
-		 * fprintf(stderr,"ssl3_choose_cipher %d alg= %lx\n",
-		 * i,c->algorithms);
-		 */
-#endif                          /* KSSL_DEBUG */
 
 		alg_k = c->algorithm_mkey;
 		alg_a = c->algorithm_auth;
@@ -4108,16 +4101,8 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 
 		if (SSL_C_IS_EXPORT(c)) {
 			ok = (alg_k & emask_k) && (alg_a & emask_a);
-#ifdef CIPHER_DEBUG
-			fprintf(stderr, "%d:[%08lX:%08lX:%08lX:%08lX]%p:%s (export)\n",
-					ok, alg_k, alg_a, emask_k, emask_a, (void *)c, c->name);
-#endif
 		} else {
 			ok = (alg_k & mask_k) && (alg_a & mask_a);
-#ifdef CIPHER_DEBUG
-			fprintf(stderr, "%d:[%08lX:%08lX:%08lX:%08lX]%p:%s\n", ok, alg_k,
-					alg_a, mask_k, mask_a, (void *)c, c->name);
-#endif
 		}
 
 #ifndef OPENSSL_NO_TLSEXT
@@ -4128,7 +4113,9 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 		 * EC key check it
 		 */
 		if (alg_k & SSL_kEECDH){
-			ok = ok && tls1_check_ec_tmp_key(s, c->id);
+			printf("[AMJ-SUPERTLS] %s: OPENSSL_ECDH defined -- before: ok=%d;\n", __func__, ok);
+			ok = ok && tls1_check_sec_ec_tmp_key(s, c->id);
+			printf("[AMJ-SUPERTLS] %s: OPENSSL_ECDH defined -- after:  ok=%d;\n", __func__, ok);
 		}
 #  endif                        /* OPENSSL_NO_ECDH */
 # endif                         /* OPENSSL_NO_EC */
@@ -4150,11 +4137,41 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 #endif
 			ret = sk_SSL_CIPHER_value(allow, ii);
 
+			/* The first cipher is in s->s3->tmp.new_cipher
+			 * According to the first cipher chosen, choose (smartly)
+			 * a second cipher suite.
+			 *
+			 * We want optimal combinations. If none of those combinations is
+			 * possible, combine the two default chosen cipher suites.
+			 * This is because the time wasted in trying to reach a "better"
+			 * combination does not compensate the increase in "betterness"
+			 * of the combination.
+			 *
+			 * Optimal combinations:
+			 * 1. ECDHE-ECDSA-AES256-GCM-SHA384  TLSv1.2 Kx=ECDH Au=ECDSA Enc=AESGCM(256) Mac=AEAD
+			 *    AES256-SHA256                  TLSv1.2 Kx=RSA  Au=RSA   Enc=AES(256)    Mac=SHA256
+			 *
+			 * 2. ECDHE-ECDSA-AES256-GCM-SHA384  TLSv1.2 Kx=ECDH Au=ECDSA Enc=AESGCM(256) Mac=AEAD
+			 *    AES256-GCM-SHA384              TLSv1.2 Kx=RSA  Au=RSA   Enc=AESGCM(256) Mac=AEAD
+			 *
+			 * Sub-optimal combinations:
+			 * 3. DHE-DSS-AES256-GCM-SHA384      TLSv1.2 Kx=DH   Au=RSA   Enc=AESGCM(256) Mac=AEAD
+			 *    AES256-GCM-SHA384              TLSv1.2 Kx=RSA  Au=RSA   Enc=AESGCM(256) Mac=AEAD
+			 *
+			 */
+
 			/* AMJ-SUPERTLS-IMPLEMENTATION: Delete the cipher chosen from the list */
 			deleted = sk_SSL_CIPHER_delete(allow, ii);
 			if(deleted != NULL)
 				printf("[AMJ-SUPERTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
 			printf("[AMJ-SUPERTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
+			printf("[AMJ-SUPERTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
+			printf("[AMJ-SUPERTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
+			printf("[AMJ-SUPERTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
+			printf("[AMJ-SUPERTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
+			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);
+
+
 			/* ----------------------------------------- */
 
 			break;
@@ -4305,6 +4322,11 @@ SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
             if(deleted != NULL)
             	printf("[AMJ-SUPERTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
             printf("[AMJ-SUPERTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
+			printf("[AMJ-SUPERTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
+			printf("[AMJ-SUPERTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
+			printf("[AMJ-SUPERTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
+			printf("[AMJ-SUPERTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
+			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);
             /* ----------------------------------------- */
 
             break;

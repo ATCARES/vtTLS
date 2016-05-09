@@ -1464,16 +1464,14 @@ int ssl3_get_client_hello(SSL *s)
         c = ssl3_choose_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
         s->s3->tmp.new_cipher = c;
 
-        /* AMJ-SUPERTLS-IMPLEMENTATION: Dummy implementation of choosing a second cipher */
-        c_sec = ssl3_choose_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
-        s->s3->tmp.new_cipher = c_sec;
+        /*
+         * Choosing the second cipher
+         */
+        c_sec = ssl3_choose_sec_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
+        s->s3->tmp.new_cipher_sec = c_sec;
 
-        c_test = ssl3_choose_sec_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
-        s->s3->tmp.new_cipher_sec = c_test;
-
-        printf("[AMJ-SUPERTLS] %s: Chosen cipher -- %s\n", __func__, c->name);
-        printf("[AMJ-SUPERTLS] %s: Chosen second cipher -- %s\n", __func__, c_sec->name);
-        printf("[AMJ-SUPERTLS] %s: [TEST] Chosen second cipher -- %s\n", __func__, c_test->name);
+        printf("[AMJ-SUPERTLS] %s: Chosen cipher -- %s\n", __func__, s->s3->tmp.new_cipher->name);
+        printf("[AMJ-SUPERTLS] %s: Chosen second cipher -- %s\n", __func__, s->s3->tmp.new_cipher_sec->name);
 
         if (c == NULL || c_sec == NULL) {
             al = SSL_AD_HANDSHAKE_FAILURE;
@@ -1508,7 +1506,6 @@ int ssl3_get_client_hello(SSL *s)
         } else
 #endif
             s->s3->tmp.new_cipher = s->session->cipher;
-        	/* AMJ-SUPERTLS-IMPLEMENTATION: TODO: UNTESTED */
         	s->s3->tmp.new_cipher_sec = s->session->secondary_cipher;
     }
 
