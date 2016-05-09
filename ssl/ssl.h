@@ -2318,7 +2318,6 @@ void SSL_CTX_set_default_passwd_cb(SSL_CTX *ctx, pem_password_cb *cb);
 void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX *ctx, void *u);
 
 int SSL_CTX_check_private_key(const SSL_CTX *ctx);
-
 /* AMJ-SUPERTLS-IMPLEMENTATION: Check second private key */
 int SSL_CTX_check_second_private_key(const SSL_CTX *ctx);
 

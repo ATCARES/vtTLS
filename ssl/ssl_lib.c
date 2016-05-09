@@ -913,7 +913,7 @@ X509 *SSL_get_second_peer_certificate(const SSL *s)
     if ((s == NULL) || (s->session == NULL))
         r = NULL;
     else
-        r = s->session->peer;
+        r = s->session->peer_sec;
 
     if (r == NULL)
         return (r);
@@ -988,6 +988,24 @@ int SSL_CTX_check_private_key(const SSL_CTX *ctx)
     }
     return (X509_check_private_key
             (ctx->cert->key->x509, ctx->cert->key->privatekey));
+}
+
+/* Fix this so it checks all the valid key/cert options */
+int SSL_CTX_check_second_private_key(const SSL_CTX *ctx)
+{
+    if ((ctx == NULL) ||
+        (ctx->cert_sec == NULL) || (ctx->cert_sec->key->x509 == NULL)) {
+        SSLerr(SSL_F_SSL_CTX_CHECK_PRIVATE_KEY,
+               SSL_R_NO_CERTIFICATE_ASSIGNED);
+        return (0);
+    }
+    if (ctx->cert_sec->key->privatekey == NULL) {
+        SSLerr(SSL_F_SSL_CTX_CHECK_PRIVATE_KEY,
+               SSL_R_NO_PRIVATE_KEY_ASSIGNED);
+        return (0);
+    }
+    return (X509_check_private_key
+            (ctx->cert_sec->key->x509, ctx->cert_sec->key->privatekey));
 }
 
 /* Fix this function so that it takes an optional type parameter */
