@@ -445,7 +445,7 @@ static int ssl3_get_record(SSL *s)
 
     /**********************************************/
 
-    printf("[AMJ-SUPERTLS] %s: Decrypting sec...\n", __func__);
+    // printf("[AMJ-SUPERTLS] %s: Decrypting sec...\n", __func__);
     enc_err = s->method->ssl3_enc->sec_enc(s, 0);
 
     if (enc_err == 0) {
@@ -463,7 +463,7 @@ static int ssl3_get_record(SSL *s)
 		mac_size_sec = EVP_MD_CTX_size(s->read_hash_sec);
 		OPENSSL_assert(mac_size_sec <= EVP_MAX_MD_SIZE);
 
-	    printf("[AMJ-SUPERTLS] %s: mac_size_sec=%d\n", __func__, mac_size_sec);
+	    // printf("[AMJ-SUPERTLS] %s: mac_size_sec=%d\n", __func__, mac_size_sec);
 
         orig_len_sec = rr->length + ((unsigned int)rr->type >> 8);
 
@@ -495,9 +495,9 @@ static int ssl3_get_record(SSL *s)
 
     }
 
-    printf("[AMJ-SUPERTLS] %s: Decrypting...\n", __func__);
+    /**********************************************/
+
     enc_err = s->method->ssl3_enc->enc(s, 0);
-    printf("[AMJ-SUPERTLS] %s: enc_err = %d\n", __func__, enc_err);
 
     /**********************************************/
 
@@ -600,7 +600,7 @@ static int ssl3_get_record(SSL *s)
         }
     }
 
-    printf("[AMJ-SUPERTLS] %s: rr->length = %d\n", __func__, rr->length);
+    // printf("[AMJ-SUPERTLS] %s: rr->length = %d\n", __func__, rr->length);
 
     if (rr->length > SSL3_RT_MAX_PLAIN_LENGTH + extra) {
         al = SSL_AD_RECORD_OVERFLOW;
@@ -1294,8 +1294,6 @@ int ssl3_read_bytes(SSL *s, int type, unsigned char *buf, int len, int peek)
     unsigned int n;
     SSL3_RECORD *rr;
     void (*cb) (const SSL *ssl, int type2, int val) = NULL;
-
-    printf("[AMJ-SUPERTLS] %s: Entered\n", __func__);
 
     if (s->s3->rbuf.buf == NULL) /* Not initialized yet */
         if (!ssl3_setup_read_buffer(s))
