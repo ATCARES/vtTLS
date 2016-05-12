@@ -917,8 +917,6 @@ static int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
                          unsigned int len, int create_empty_fragment)
 {
 
-	printf("[AMJ-SUPERTLS] Entered %s\n", __func__);
-
     unsigned char *p, *plen;
     int i, mac_size, mac_size_sec, clear = 0, clear_sec = 0;
     int prefix_len = 0;
@@ -985,9 +983,6 @@ static int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
             goto err;
     }
 
-    printf("[AMJ-SUPERTLS] %s: clear=%d; clear_sec=%d\n", __func__, clear, clear_sec);
-    printf("[AMJ-SUPERTLS] %s: mac_size=%d; mac_size_sec=%d\n", __func__, mac_size, mac_size_sec);
-
     /* TODO: Analyze this part and see if I can have problems here */
 
     /*
@@ -1043,16 +1038,12 @@ static int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
 #endif
         p = wb->buf + align;
         wb->offset = align;
-
-        printf("[AMJ-SUPERTLS] %s: align=%d\n", __func__, align);
     }
 
     /* write the header */
 
     *(p++) = type & 0xff;
     wr->type = type;
-
-    printf("[AMJ-SUPERTLS] %s: message type=%d\n", __func__, type & 0xff);
 
     *(p++) = (s->version >> 8);
     /*
@@ -1161,7 +1152,6 @@ static int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
      */
 
 	wr->data = p + eivlen_sec;
-	printf("[AMJ-SUPERTLS] %s: wr->length=%d\n", __func__, wr->length);
 
 	memmove(wr->data, wr->input, wr->length);
 

@@ -250,7 +250,6 @@ int ssl3_get_finished(SSL *s, int a, int b)
     n = s->method->ssl_get_message(s, a, b, SSL3_MT_FINISHED, 64, &ok);
 
     if (!ok){
-    	printf("[AMJ-SUPERTLS] %s: ret=%d\n", __func__, n);
         return ((int)n);
     }
 
@@ -428,9 +427,7 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
         }
         while (skip_message);
 
-        printf("[AMJ-SUPERTLS] %s: i = %d; p[%d] = %u\n", __func__, i, p[s->init_num], s->init_num);
         /* s->init_num == 4 */
-    	printf("[AMJ-SUPERTLS] %s: mt = %d; *p = %u\n", __func__, mt, *p);
 
         if ((mt >= 0) && (*p != mt)) {
         	printf("[AMJ-SUPERTLS] %s: ERROR: mt = %d; *p = %u\n", __func__, mt, *p);

@@ -1049,9 +1049,6 @@ int tls1_setup_key_block(SSL *s)
  */
 int tls1_enc(SSL *s, int send)
 {
-
-	printf("[AMJ-SUPERTLS] %s: I'm encrypting stuff!\n", __func__);
-
     SSL3_RECORD *rec;
     EVP_CIPHER_CTX *ds;
     unsigned long l;
@@ -1092,9 +1089,6 @@ int tls1_enc(SSL *s, int send)
                 else if (RAND_bytes(rec->input, ivlen) <= 0)
                     return -1;
             }
-
-            printf("[AMJ-SUPERTLS] ivlen: %d\n", ivlen);
-
         }
 
     } else {
@@ -1114,9 +1108,6 @@ int tls1_enc(SSL *s, int send)
 
     }
 
-    if(enc != NULL)
-    	printf("[AMJ-SUPERTLS] %s: enc = %s\n", __func__, OBJ_nid2ln(enc->nid));
-
     if ((s->session == NULL) || (ds == NULL) || (enc == NULL)) {
         memmove(rec->data, rec->input, rec->length);
         rec->input = rec->data;
@@ -1124,13 +1115,6 @@ int tls1_enc(SSL *s, int send)
     } else {
         l = rec->length;
         bs = EVP_CIPHER_block_size(ds->cipher);
-
-        printf("[AMJ-SUPERTLS] %s: bs = %d\n", __func__, bs);
-
-        fprintf(stderr, "[AMJ-SUPERTLS] Before adding pad - rec->input=\n");
-        for (ui = 0; ui < l; ui++)
-            fprintf(stderr, " %02x", rec->input[ui]);
-        fprintf(stderr, "\n");
 
         if (EVP_CIPHER_flags(ds->cipher) & EVP_CIPH_FLAG_AEAD_CIPHER) {
             unsigned char buf[EVP_AEAD_TLS1_AAD_LEN], *seq;
@@ -1208,52 +1192,11 @@ int tls1_enc(SSL *s, int send)
 
         if (!send) {
             if (l == 0 || l % bs != 0){
-                printf("[AMJ-SUPERTLS] %s: Finished receive\n", __func__);
                 return 0;
             }
         }
 
-        if (send){
-
-			/* AMJ-SUPERTLS:
-			 *
-			 * ctx->cipher->do_cipher
-			 * (ds (ctx), rec->data (out), rec->input (in), l (inl))
-			 *
-			 */
-        	printf("[AMJ-SUPERTLS] %s: SEND\n", __func__);
-        	printf("[AMJ-SUPERTLS] %s: l = %lu\n", __func__, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] rec->input=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->input[ui]);
-            fprintf(stderr, "\n");
-
-        	i = EVP_Cipher(ds, rec->data, rec->input, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] rec->data=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->data[ui]);
-            fprintf(stderr, "\n");
-
-        } else {
-
-        	printf("[AMJ-SUPERTLS] %s: NOT-SEND\n", __func__);
-        	printf("[AMJ-SUPERTLS] %s: l = %lu\n", __func__, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] rec->input=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->input[ui]);
-            fprintf(stderr, "\n");
-
-        	i = EVP_Cipher(ds, rec->data, rec->input, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] rec->data=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->data[ui]);
-            fprintf(stderr, "\n");
-
-        }
+        i = EVP_Cipher(ds, rec->data, rec->input, l);
 
         if ((EVP_CIPHER_flags(ds->cipher) & EVP_CIPH_FLAG_CUSTOM_CIPHER)
             ? (i < 0)
@@ -1282,24 +1225,16 @@ int tls1_enc(SSL *s, int send)
 
         if ((bs != 1) && !send){
             ret = tls1_cbc_remove_padding(s, rec, bs, mac_size);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] After remove pad - rec->data=\n");
-            for (ui = 0; ui < rec->length; ui++)
-                fprintf(stderr, " %02x", rec->data[ui]);
-            fprintf(stderr, "\n");
         }
 
         if (pad && !send)
             rec->length -= pad;
     }
 
-    printf("[AMJ-SUPERTLS] %s: Finished\n", __func__);
     return ret;
 }
 
 int tls1_sec_enc(SSL *s, int send){
-
-	printf("[AMJ-SUPERTLS] %s: I'm encrypting stuff!\n", __func__);
 
     SSL3_RECORD *rec;
     EVP_CIPHER_CTX *ds;
@@ -1329,8 +1264,6 @@ int tls1_sec_enc(SSL *s, int send){
 
         	int ivlen_sec;
             enc_sec = EVP_CIPHER_CTX_cipher(s->sec_enc_write_ctx);
-
-            printf("[AMJ-SUPERTLS] %s: Use explicit IV? %d\n", __func__, SSL_USE_EXPLICIT_IV(s));
 
             /* For TLSv1.1 and later explicit IV */
             if (SSL_USE_EXPLICIT_IV(s)
@@ -1368,9 +1301,6 @@ int tls1_sec_enc(SSL *s, int send){
 
     }
 
-    if(enc_sec != NULL)
-    	printf("[AMJ-SUPERTLS] %s: enc_sec = %s\n", __func__, OBJ_nid2ln(enc_sec->nid));
-
     if ((s->session == NULL) || (ds_sec == NULL) || (enc_sec == NULL)) {
         memmove(rec->data, rec->input, rec->length);
         rec->input = rec->data;
@@ -1378,13 +1308,6 @@ int tls1_sec_enc(SSL *s, int send){
     } else {
         l = rec->length;
         bs_sec = EVP_CIPHER_block_size(ds_sec->cipher);
-
-        printf("[AMJ-SUPERTLS] %s: bs_sec = %d\n", __func__, bs_sec);
-
-        fprintf(stderr, "[AMJ-SUPERTLS] Before adding pad - rec->data=\n");
-        for (ui = 0; ui < rec->length; ui++)
-            fprintf(stderr, " %02x", rec->data[ui]);
-        fprintf(stderr, "\n");
 
         if (EVP_CIPHER_flags(ds_sec->cipher) & EVP_CIPH_FLAG_AEAD_CIPHER) {
             unsigned char buf[EVP_AEAD_TLS1_AAD_LEN], *seq;
@@ -1462,52 +1385,11 @@ int tls1_sec_enc(SSL *s, int send){
 
         if (!send) {
             if (l == 0 || l % bs_sec != 0){
-                printf("[AMJ-SUPERTLS] %s: Finished receive\n", __func__);
                 return 0;
             }
         }
 
-        if (send){
-
-			/* AMJ-SUPERTLS:
-			 *
-			 * ctx->cipher->do_cipher
-			 * (ds (ctx), rec->data (out), rec->input (in), l (inl))
-			 *
-			 */
-        	printf("[AMJ-SUPERTLS] %s: SEND\n", __func__);
-        	printf("[AMJ-SUPERTLS] %s: l = %lu\n", __func__, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] --- rec->input=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->input[ui]);
-            fprintf(stderr, "\n");
-
-        	i = EVP_Cipher(ds_sec, rec->data, rec->input, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] --- rec->data=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->data[ui]);
-            fprintf(stderr, "\n");
-
-        } else {
-
-        	printf("[AMJ-SUPERTLS] %s: NOT-SEND\n", __func__);
-        	printf("[AMJ-SUPERTLS] %s: l = %lu\n", __func__, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] --- rec->input=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->input[ui]);
-            fprintf(stderr, "\n");
-
-        	i = EVP_Cipher(ds_sec, rec->data, rec->input, l);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] --- rec->data=\n");
-            for (ui = 0; ui < l; ui++)
-                fprintf(stderr, " %02x", rec->data[ui]);
-            fprintf(stderr, "\n");
-
-        }
+        i = EVP_Cipher(ds_sec, rec->data, rec->input, l);
 
         if ((EVP_CIPHER_flags(ds_sec->cipher) & EVP_CIPH_FLAG_CUSTOM_CIPHER)
             ? (i < 0)
@@ -1525,23 +1407,13 @@ int tls1_sec_enc(SSL *s, int send){
         if (EVP_MD_CTX_md(s->read_hash_sec) != NULL)
             mac_size_sec = EVP_MD_CTX_size(s->read_hash_sec);
 
-        printf("[AMJ-SUPERTLS] %s: mac_size_sec=%d\n", __func__, mac_size_sec);
-
         if ((bs_sec != 1) && !send){
-
             ret = tls1_cbc_remove_padding(s, rec, bs_sec, mac_size_sec);
-
-            fprintf(stderr, "[AMJ-SUPERTLS] After remove pad - rec->data=\n");
-            for (ui = 0; ui < rec->length; ui++)
-                fprintf(stderr, " %02x", rec->data[ui]);
-            fprintf(stderr, "\n");
         }
 
         if (pad && !send)
             rec->length -= pad;
     }
-
-    printf("[AMJ-SUPERTLS] %s: Finished\n", __func__);
 
     return ret;
 

@@ -3848,14 +3848,17 @@ int ssl3_send_server_certificate(SSL *s)
             }
         }
 
-         /* TODO: FIX
+         /* FIXED
           * cpk_sec was not being well retrieved due to the fact that c_sec and new_cipher_sec
           * are not related. The current second cipher is still being chosen according to the
           * first certificate
           *
           */
-        cpk_sec = ssl_get_server_send_pkey_sec(s);
-        //cpk_sec = ssl_get_server_send_pkey(s);
+        if(s->cert_sec != NULL)
+        	cpk_sec = ssl_get_server_send_pkey_sec(s);
+        else if (s->cert_sec == NULL)
+        	cpk_sec = ssl_get_server_send_pkey(s);
+
         if (cpk_sec == NULL) {
             /* VRS: allow null cert if auth == KRB5 */
             if ((s->s3->tmp.new_cipher_sec->algorithm_auth != SSL_aKRB5) ||
@@ -3866,15 +3869,6 @@ int ssl3_send_server_certificate(SSL *s)
                 return (0);
             }
         }
-
-        if(cpk->x509->name != NULL)
-        	printf("[AMJ-SUPERTLS] %s: cpk:     %s\n", __func__, cpk->x509->name);
-        else
-        	printf("[AMJ-SUPERTLS] %s: cpk is NULL.\n", __func__);
-        if (cpk_sec->x509->name != NULL)
-        	printf("[AMJ-SUPERTLS] %s: cpk_sec: %s\n", __func__, cpk_sec->x509->name);
-        else
-        	printf("[AMJ-SUPERTLS] %s: cpk_sec is NULL.\n", __func__);
 
         if (!ssl3_output_certs_chains(s, cpk, cpk_sec)) {
             SSLerr(SSL_F_SSL3_SEND_SERVER_CERTIFICATE, ERR_R_INTERNAL_ERROR);

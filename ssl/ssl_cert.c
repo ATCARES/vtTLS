@@ -1127,10 +1127,8 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
 	 * due to the fact that new_cipher_sec and cert_sec are not related
 	 *
 	 */
-    /*if (s->cert_sec->chain_store)
-        chain_store_sec = s->cert_sec->chain_store;*/
-    if (s->cert->chain_store)
-        chain_store_sec = s->cert->chain_store;
+    if (s->cert_sec->chain_store)
+        chain_store_sec = s->cert_sec->chain_store;
 	else
 		chain_store_sec = s->ctx->cert_store;
 
