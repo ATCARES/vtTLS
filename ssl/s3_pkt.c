@@ -445,8 +445,9 @@ static int ssl3_get_record(SSL *s)
 
     /**********************************************/
 
-    // printf("[AMJ-SUPERTLS] %s: Decrypting sec...\n", __func__);
     enc_err = s->method->ssl3_enc->sec_enc(s, 0);
+
+    /**********************************************/
 
     if (enc_err == 0) {
         al = SSL_AD_DECRYPTION_FAILED;

@@ -3856,8 +3856,10 @@ int ssl3_send_server_certificate(SSL *s)
           */
         if(s->cert_sec != NULL)
         	cpk_sec = ssl_get_server_send_pkey_sec(s);
-        else if (s->cert_sec == NULL)
+        else if (s->cert_sec == NULL){
+        	s->cert_sec = s->cert;
         	cpk_sec = ssl_get_server_send_pkey(s);
+        }
 
         if (cpk_sec == NULL) {
             /* VRS: allow null cert if auth == KRB5 */

@@ -1514,7 +1514,7 @@ int tls1_mac(SSL *ssl, unsigned char *md, int send)
     EVP_MD_CTX hmac, *mac_ctx;
     unsigned char header[13];
     int stream_mac = (send ? (ssl->mac_flags & SSL_MAC_FLAG_WRITE_MAC_STREAM)
-                      : (ssl->mac_flags & SSL_MAC_FLAG_READ_MAC_STREAM));
+                           : (ssl->mac_flags & SSL_MAC_FLAG_READ_MAC_STREAM));
     int t;
 
     if (send) {
