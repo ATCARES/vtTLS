@@ -1,0 +1,19 @@
+Simple client and server SuperTLS command-line applications
+
+Installation:
+- make clean;
+- make
+
+Run server:
+- ./server <port> (run on localhost on port 1111)
+
+Available files:
+- test100k.txt --- 100KB text file with random chars
+- test1m.txt   --- 1MB text file with random chars
+- test10m.txt  --- 10MB text file with random chars
+
+Run client:
+- ./client <ip> <port> <file-to-download>
+
+André Joaquim | 2016
+
