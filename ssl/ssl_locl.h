@@ -1426,6 +1426,7 @@ int tls1_set_sigalgs(CERT *c, const int *salg, size_t salglen, int client);
 int tls1_check_chain(SSL *s, X509 *x, EVP_PKEY *pk, STACK_OF(X509) *chain,
                      int idx, int n_cert);
 void tls1_set_cert_validity(SSL *s);
+void tls1_set_sec_cert_validity(SSL *s);
 
 #  endif
 EVP_MD_CTX *ssl_replace_hash(EVP_MD_CTX **hash, const EVP_MD *md);
