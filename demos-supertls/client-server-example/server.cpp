@@ -41,6 +41,8 @@
 #define ECDH2_CERTF    "server-dh-cert.crt"
 #define ECDH2_KEYF     "server-dh-key.pem"
 
+#define MAX_MSG_SIZE 16250
+
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
@@ -162,45 +164,44 @@ int main (int argc, char* argv[])
     printf ("Client does not have certificate.\n");
 
   /* DATA EXCHANGE - Receive message and send reply. */
-   
-  /*
-  FILE *fileptr;
-  char *buffer;
-  long filelen;
-
-  fileptr = fopen("test1Gb.txt", "rb");     // Open the file in binary mode
-  fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
-  filelen = ftell(fileptr);             // Get the current byte offset in the file
-  rewind(fileptr);                      // Jump back to the beginning of the file
-
-  buffer = (char *)malloc((filelen+1)*sizeof(char)); // Enough memory for file + \0
-  fread(buffer, filelen, 1, fileptr);                // Read in the entire file
-  fclose(fileptr);                                   // Close the file
-  
-  */
-  
+    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                   CHK_SSL(err);
   buf[err] = '\0';
   printf ("Got %d chars:'%s'\n", err, buf);
+   
+  FILE *file;
+  char *buffer;
+  long file_len;
+
+  file = fopen(buf, "rb");	// Open the file in binary mode
+  fseek(file, 0, SEEK_END);	// Jump to the end of the file
+  file_len = ftell(file);	// Get the current byte offset in the file
+  rewind(file);			// Jump back to the beginning of the file
+
+  buffer = (char *)malloc((file_len+1)*sizeof(char));	// Enough memory for file + \0
+  fread(buffer, file_len, 1, file);                	// Read in the entire file
+  buffer[file_len] = '\0';
+  fclose(file);                                   	// Close the file
+      
+  char filelen[512];
+  sprintf(filelen, "%d", file_len);
   
-  err = SSL_write (ssl, "I hear you.", strlen("I hear you."));  CHK_SSL(err);
-  
-  /*int max_size = 16250;
+  err = SSL_write (ssl, filelen, strlen(filelen));
+
   err = 0;
-  int total_size = max_size;
+  int i = file_len;
   
-  while(total_size < filelen){
-    err = SSL_write (ssl, buffer+err, max_size);  CHK_SSL(err);
-    total_size += err;
+  for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+    err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
   }
   
-  // SSL_write (ssl, buffer, filelen - total_size);
+  err += SSL_write (ssl, buffer+err, i);
   
-  printf("test1Gb.txt filelen = %ld\n", filelen);*/
-
+  printf("total_size: %d\n", err);
+    
   /* Clean up. */
 
-  // free(buffer);
+  free(buffer);
   
   close (sd);
   SSL_free (ssl);
@@ -209,4 +210,4 @@ int main (int argc, char* argv[])
   return 0;
   
 }
-/* EOF - serv.cpp */ 
+/* EOF - serv.cpp */
