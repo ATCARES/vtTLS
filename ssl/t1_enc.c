@@ -319,7 +319,7 @@ static int tls1_generate_key_block(SSL *s, unsigned char *km,
 
 int tls1_change_cipher_state(SSL *s, int which)
 {
-	printf("[AMJ-SUPERTLS] %s: Change cipher state\n", __func__);
+	/* printf("[AMJ-SUPERTLS] %s: Change cipher state\n", __func__); */
 
     static const unsigned char empty[] = "";
     unsigned char *p, *mac_secret;
@@ -575,7 +575,7 @@ int tls1_change_cipher_state(SSL *s, int which)
     else
         k_sec = EVP_CIPHER_iv_length(c);
 
-    printf("[AMJ-SUPERTLS] %s: k = %d; k_sec = %d\n", __func__, k, k_sec);
+    /* printf("[AMJ-SUPERTLS] %s: k = %d; k_sec = %d\n", __func__, k, k_sec); */
 
     if ((which == SSL3_CHANGE_CIPHER_CLIENT_WRITE) ||
         (which == SSL3_CHANGE_CIPHER_SERVER_READ)) {
@@ -682,10 +682,10 @@ int tls1_change_cipher_state(SSL *s, int which)
     }
 #endif
 
-	printf("[AMJ-SUPERTLS] %s: is_export? %d; is_export_sec? %d\n", __func__, is_export, is_export_sec);
+	/* printf("[AMJ-SUPERTLS] %s: is_export? %d; is_export_sec? %d\n", __func__, is_export, is_export_sec); */
 
     if (is_export) {
-    	printf("[AMJ-SUPERTLS] %s: enc is export!!!\n", __func__);
+    	/* printf("[AMJ-SUPERTLS] %s: enc is export!!!\n", __func__); */
         /*
          * In here I set both the read and write key/iv to the same value
          * since only the correct one will be used :-).
@@ -763,26 +763,20 @@ int tls1_change_cipher_state(SSL *s, int which)
 #endif                          /* KSSL_DEBUG */
 
 
-    if(c != NULL)
+    /* if(c != NULL)
     	printf("[AMJ-SUPERTLS] %s: EVP_CIPHER *c     = %s\n", __func__, OBJ_nid2ln(c->nid));
     if(c_sec != NULL)
-        printf("[AMJ-SUPERTLS] %s: EVP_CIPHER *c_sec = %s\n", __func__, OBJ_nid2ln(c_sec->nid));
+        printf("[AMJ-SUPERTLS] %s: EVP_CIPHER *c_sec = %s\n", __func__, OBJ_nid2ln(c_sec->nid));*/
 
     if (EVP_CIPHER_mode(c) == EVP_CIPH_GCM_MODE) {
         if (!EVP_CipherInit_ex(dd, c, NULL, key, NULL, (which & SSL3_CC_WRITE))
             || !EVP_CIPHER_CTX_ctrl(dd, EVP_CTRL_GCM_SET_IV_FIXED, k, iv)) {
             SSLerr(SSL_F_TLS1_CHANGE_CIPHER_STATE, ERR_R_INTERNAL_ERROR);
             goto err2;
-        } else {
-        	printf("[AMJ-SUPERTLS] %s: EVP_CIPHER c is using GCM.\n", __func__);
-        }
     } else {
         if (!EVP_CipherInit_ex(dd, c, NULL, key, iv, (which & SSL3_CC_WRITE))) {
             SSLerr(SSL_F_TLS1_CHANGE_CIPHER_STATE, ERR_R_INTERNAL_ERROR);
             goto err2;
-        } else {
-        	printf("[AMJ-SUPERTLS] %s: EVP_CIPHER c is NOT using GCM.\n", __func__);
-        }
     }
 
     if (EVP_CIPHER_mode(c_sec) == EVP_CIPH_GCM_MODE) {
@@ -790,16 +784,10 @@ int tls1_change_cipher_state(SSL *s, int which)
             || !EVP_CIPHER_CTX_ctrl(dd_sec, EVP_CTRL_GCM_SET_IV_FIXED, k_sec, iv_sec)) {
             SSLerr(SSL_F_TLS1_CHANGE_CIPHER_STATE, ERR_R_INTERNAL_ERROR);
             goto err2;
-        } else {
-        	printf("[AMJ-SUPERTLS] %s: EVP_CIPHER c_sec is using GCM.\n", __func__);
-        }
     } else {
         if (!EVP_CipherInit_ex(dd_sec, c_sec, NULL, key_sec, iv_sec, (which & SSL3_CC_WRITE))) {
             SSLerr(SSL_F_TLS1_CHANGE_CIPHER_STATE, ERR_R_INTERNAL_ERROR);
             goto err2;
-        } else {
-        	printf("[AMJ-SUPERTLS] %s: EVP_CIPHER c_sec is NOT using GCM.\n", __func__);
-        }
     }
 
     /* Needed for "composite" AEADs, such as RC4-HMAC-MD5 */
@@ -821,7 +809,6 @@ int tls1_change_cipher_state(SSL *s, int which)
     }
 
 #ifdef OPENSSL_SSL_TRACE_CRYPTO
-    printf("[AMJ-SUPERTLS] %s: OPENSSL_SSL_TRACE_CRYPTO defined\n", __func__);
     if (s->msg_callback) {
         int wh = which & SSL3_CC_WRITE ? TLS1_RT_CRYPTO_WRITE : 0;
         if (*mac_secret_size)
@@ -893,7 +880,7 @@ int tls1_setup_key_block(SSL *s)
         return (1);
 
     /* AMJ-SUPERTLS: DEBUGGING PURPOSES */
-    if( s->session->cipher != NULL )
+    /* if( s->session->cipher != NULL )
 		printf("[AMJ-SUPERTLS] %s: SESSION->cipher -- %s\n", __func__, s->session->cipher->name);
 	else
 		printf("[AMJ-SUPERTLS] %s: SESSION->cipher -- NULL\n", __func__);
@@ -901,7 +888,7 @@ int tls1_setup_key_block(SSL *s)
     if( s->session->secondary_cipher != NULL )
 		printf("[AMJ-SUPERTLS] %s: SESSION->sec_cipher -- %s\n", __func__, s->session->secondary_cipher->name);
 	else
-		printf("[AMJ-SUPERTLS] %s: SESSION->sec_cipher -- NULL\n", __func__);
+		printf("[AMJ-SUPERTLS] %s: SESSION->sec_cipher -- NULL\n", __func__);*/
     /* ************************* */
 
     if (!ssl_cipher_get_evp
@@ -912,7 +899,6 @@ int tls1_setup_key_block(SSL *s)
 
     if (!ssl_secondary_cipher_get_evp
         (s->session, &c_sec, &hash_sec, &mac_type_sec, &mac_secret_size_sec, &comp_sec)) {
-    	printf("[AMJ-SUPERTLS] %s: 'ssl_secondary_cipher_get_evp' not working\n", __func__);
         SSLerr(SSL_F_TLS1_SETUP_KEY_BLOCK, SSL_R_CIPHER_OR_HASH_UNAVAILABLE);
         return (0);
     }

@@ -2965,8 +2965,6 @@ int ssl3_handshake_write(SSL *s)
 int ssl3_new(SSL *s)
 {
 
-	printf("[AMJ-SUPERTLS] %s: NEW SSL3\n", __func__);
-
     SSL3_STATE *s3;
 
     if ((s3 = OPENSSL_malloc(sizeof *s3)) == NULL)
@@ -4113,9 +4111,7 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 		 * EC key check it
 		 */
 		if (alg_k & SSL_kEECDH){
-			printf("[AMJ-SUPERTLS] %s: OPENSSL_ECDH defined -- before: ok=%d;\n", __func__, ok);
 			ok = ok && tls1_check_sec_ec_tmp_key(s, c->id);
-			printf("[AMJ-SUPERTLS] %s: OPENSSL_ECDH defined -- after:  ok=%d;\n", __func__, ok);
 		}
 #  endif                        /* OPENSSL_NO_ECDH */
 # endif                         /* OPENSSL_NO_EC */
@@ -4162,16 +4158,15 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 
 			/* AMJ-SUPERTLS-IMPLEMENTATION: Delete the cipher chosen from the list */
 			deleted = sk_SSL_CIPHER_delete(allow, ii);
-			if(deleted != NULL)
+
+			/*if(deleted != NULL)
 				printf("[AMJ-SUPERTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
 			printf("[AMJ-SUPERTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
 			printf("[AMJ-SUPERTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
 			printf("[AMJ-SUPERTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
 			printf("[AMJ-SUPERTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
 			printf("[AMJ-SUPERTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
-			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);
-
-
+			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);*/
 			/* ----------------------------------------- */
 
 			break;
@@ -4319,14 +4314,14 @@ SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 
             /* AMJ-SUPERTLS-IMPLEMENTATION: Delete the cipher chosen from the list */
             deleted = sk_SSL_CIPHER_delete(allow, ii);
-            if(deleted != NULL)
+            /*if(deleted != NULL)
             	printf("[AMJ-SUPERTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
             printf("[AMJ-SUPERTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
 			printf("[AMJ-SUPERTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
 			printf("[AMJ-SUPERTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
 			printf("[AMJ-SUPERTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
 			printf("[AMJ-SUPERTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
-			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);
+			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);*/
             /* ----------------------------------------- */
 
             break;

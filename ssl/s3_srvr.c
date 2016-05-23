@@ -211,7 +211,7 @@ static int ssl_check_srp_ext_ClientHello(SSL *s, int *al)
 
 int ssl3_accept(SSL *s)
 {
-    printf("[AMJ-SUPERTLS] %s: Accepting client\n", __func__);
+    // printf("[AMJ-SUPERTLS] %s: Accepting client\n", __func__);
     
     BUF_MEM *buf;
     unsigned long alg_k, Time = (unsigned long)time(NULL);
@@ -252,7 +252,7 @@ int ssl3_accept(SSL *s)
     for (;;) {
         state = s->state;
         
-        printf("[AMJ-SUPERTLS] %s: State: %i -- %s\n", __func__, state, SSL_state_string_long(s));
+        /* printf("[AMJ-SUPERTLS] %s: State: %i -- %s\n", __func__, state, SSL_state_string_long(s));*/
 
         switch (s->state) {
         case SSL_ST_RENEGOTIATE:
@@ -492,7 +492,7 @@ int ssl3_accept(SSL *s)
                     )
                 )
                 ) {
-            	printf("[AMJ-SUPERTLS] Sending ServerKeyExchange message.\n");
+            	/* printf("[AMJ-SUPERTLS] Sending ServerKeyExchange message.\n"); */
                 ret = ssl3_send_server_key_exchange(s);
                 if (ret <= 0)
                     goto end;
@@ -734,7 +734,7 @@ int ssl3_accept(SSL *s)
         case SSL3_ST_SR_FINISHED_A:
         case SSL3_ST_SR_FINISHED_B:
 
-        	printf("[AMJ-SUPERTLS] %s: Reading client finished... \n", __func__);
+        	/* printf("[AMJ-SUPERTLS] %s: Reading client finished... \n", __func__);*/
 
             /*
              * Enable CCS for handshakes without NPN. In NPN the CCS flag has
@@ -749,10 +749,7 @@ int ssl3_accept(SSL *s)
             ret = ssl3_get_finished(s, SSL3_ST_SR_FINISHED_A,
                                     SSL3_ST_SR_FINISHED_B);
 
-        	printf("[AMJ-SUPERTLS] %s: 'Finished' client finished... \n", __func__);
-
             if (ret <= 0){
-            	printf("[AMJ-SUPERTLS] %s: ret=%d\n", __func__, ret);
                 goto end;
             }
             if (s->hit)
@@ -768,14 +765,14 @@ int ssl3_accept(SSL *s)
 
 
             s->init_num = 0;
-        	printf("[AMJ-SUPERTLS] %s: After s->init_num\n", __func__);
+        	/* printf("[AMJ-SUPERTLS] %s: After s->init_num\n", __func__); */
             break;
 
 #ifndef OPENSSL_NO_TLSEXT
         case SSL3_ST_SW_SESSION_TICKET_A:
         case SSL3_ST_SW_SESSION_TICKET_B:
 
-        	printf("[AMJ-SUPERTLS] %s: SSL3_ST_SW_SESSION_TICKET_A/B\n", __func__);
+        	/* printf("[AMJ-SUPERTLS] %s: SSL3_ST_SW_SESSION_TICKET_A/B\n", __func__);*/
 
             ret = ssl3_send_newsession_ticket(s);
             if (ret <= 0)
@@ -798,7 +795,7 @@ int ssl3_accept(SSL *s)
         case SSL3_ST_SW_CHANGE_A:
         case SSL3_ST_SW_CHANGE_B:
 
-        	printf("[AMJ-SUPERTLS] %s: SSL3_ST_SW_CHANGE_A/B\n", __func__);
+        	/* printf("[AMJ-SUPERTLS] %s: SSL3_ST_SW_CHANGE_A/B\n", __func__); */
 
             s->session->cipher = s->s3->tmp.new_cipher;
             /* AMJ-SUPERTLS-IMPLEMENTATION */
@@ -983,7 +980,7 @@ int ssl3_get_client_hello(SSL *s)
      * differ: see RFC 2246, Appendix E, second paragraph)
      */
     s->client_version = (((int)p[0]) << 8) | (int)p[1];
-    printf("[AMJ-SUPERTLS] %s: Client version - %d\n", __func__, s->client_version);
+    /* printf("[AMJ-SUPERTLS] %s: Client version - %d\n", __func__, s->client_version);*/
     p += 2;
 
     if (SSL_IS_DTLS(s) ? (s->client_version > s->version &&
@@ -1030,7 +1027,7 @@ int ssl3_get_client_hello(SSL *s)
     /* get the session-id */
     j = *(p++);
 
-    printf("[AMJ-SUPERTLS] %s: Session id (from the client) -- %d\n", __func__, j);
+    /* printf("[AMJ-SUPERTLS] %s: Session id (from the client) -- %d\n", __func__, j);*/
 
     if (p + j > d + n) {
         al = SSL_AD_DECODE_ERROR;
@@ -1195,8 +1192,6 @@ int ssl3_get_client_hello(SSL *s)
         j = 0;
         id = s->session->cipher->id;
 
-        printf("[AMJ-SUPERTLS] %s: Hit=%d ; Cipher id is %lu\n", __func__, s->hit, id);
-
 #ifdef CIPHER_DEBUG
         fprintf(stderr, "client sent %d ciphers\n",
                 sk_SSL_CIPHER_num(ciphers));
@@ -1208,7 +1203,6 @@ int ssl3_get_client_hello(SSL *s)
                     i, sk_SSL_CIPHER_num(ciphers), SSL_CIPHER_get_name(c));
 #endif
             if (c->id == id) {
-            	printf("[AMJ-SUPERTLS] %s: Cipher chosen -- %s\n", __func__, c->name);
                 j = 1;
                 break;
             }
@@ -1314,7 +1308,7 @@ int ssl3_get_client_hello(SSL *s)
                                                                SSL_get_ciphers
                                                                (s));
 
-            printf("[AMJ-SUPERTLS] %s: Prefered cipher -- %s\n", __func__, pref_cipher->name);
+            /* printf("[AMJ-SUPERTLS] %s: Prefered cipher -- %s\n", __func__, pref_cipher->name); */
 
             if (pref_cipher == NULL) {
                 al = SSL_AD_HANDSHAKE_FAILURE;
@@ -1455,11 +1449,11 @@ int ssl3_get_client_hello(SSL *s)
         SSL_CIPHER *cipher;
         STACK_OF(SSL_CIPHER) *sk = s->session->ciphers;
         int counter = 0;
-		printf("[AMJ-SUPERTLS] Available ciphers (in order of preference): \n");
+		/* printf("[AMJ-SUPERTLS] Available ciphers (in order of preference): \n");
         for (counter = 0; counter < sk_SSL_CIPHER_num(sk); counter++) {
         	cipher = sk_SSL_CIPHER_value(sk, counter);
 			printf("[AMJ-SUPERTLS] %d: %s\n", counter, cipher->name);
-        }
+        }*/
 
         c = ssl3_choose_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
         s->s3->tmp.new_cipher = c;
@@ -1470,8 +1464,8 @@ int ssl3_get_client_hello(SSL *s)
         c_sec = ssl3_choose_sec_cipher(s, s->session->ciphers, SSL_get_ciphers(s));
         s->s3->tmp.new_cipher_sec = c_sec;
 
-        printf("[AMJ-SUPERTLS] %s: Chosen cipher -- %s\n", __func__, s->s3->tmp.new_cipher->name);
-        printf("[AMJ-SUPERTLS] %s: Chosen second cipher -- %s\n", __func__, s->s3->tmp.new_cipher_sec->name);
+        /* printf("[AMJ-SUPERTLS] %s: Chosen cipher -- %s\n", __func__, s->s3->tmp.new_cipher->name);
+        printf("[AMJ-SUPERTLS] %s: Chosen second cipher -- %s\n", __func__, s->s3->tmp.new_cipher_sec->name); */
 
         if (c == NULL || c_sec == NULL) {
             al = SSL_AD_HANDSHAKE_FAILURE;
@@ -1607,23 +1601,16 @@ int ssl3_send_server_hello(SSL *s)
         p += sl;
 
         /* put the cipher */
-        printf("[AMJ-SUPERTLS] %s: Primary cipher:\n", __func__);
-        printf("[AMJ-SUPERTLS] %s: %s\n", __func__, s->s3->tmp.new_cipher->name);
+        /* printf("[AMJ-SUPERTLS] %s: Primary cipher:\n", __func__);
+        printf("[AMJ-SUPERTLS] %s: %s\n", __func__, s->s3->tmp.new_cipher->name); */
         i = ssl3_put_cipher_by_char(s->s3->tmp.new_cipher, p);
         p += i;
 
         /* AMJ-SUPERTLS: put the secondary cipher */
-        printf("[AMJ-SUPERTLS] %s: Secondary cipher:\n", __func__);
-        printf("[AMJ-SUPERTLS] %s: %s\n", __func__, s->s3->tmp.new_cipher_sec->name);
+        /* printf("[AMJ-SUPERTLS] %s: Secondary cipher:\n", __func__);
+        printf("[AMJ-SUPERTLS] %s: %s\n", __func__, s->s3->tmp.new_cipher_sec->name);*/
         i = ssl3_put_cipher_by_char(s->s3->tmp.new_cipher_sec, p);
         p += i;
-
-        /* AMJ-SUPERTLS: Checking if the secondary cipher is in the pointer
-        SSL_CIPHER *c_temp;
-        c_temp = ssl_get_cipher_by_char(s, p);
-        printf("[AMJ-SUPERTLS] %s: get_cipher_by_char:\n", __func__);
-        printf("[AMJ-SUPERTLS] %s: %s\n", __func__, c_temp->name);
-        */
 
         /* put the compression method */
 #ifdef OPENSSL_NO_COMP
@@ -1704,7 +1691,7 @@ int ssl3_send_server_key_exchange(SSL *s)
 
     EVP_MD_CTX_init(&md_ctx);
 
-    printf("[AMJ-SUPERTLS] %s: Sending first ServerKeyExchange\n", __func__);
+    /* printf("[AMJ-SUPERTLS] %s: Sending first ServerKeyExchange\n", __func__); */
 
     if (s->state == SSL3_ST_SW_KEY_EXCH_A) {
         type = s->s3->tmp.new_cipher->algorithm_mkey;
@@ -2144,7 +2131,7 @@ int ssl3_send_sec_server_key_exchange(SSL *s)
     BUF_MEM *buf;
     EVP_MD_CTX md_ctx;
 
-    printf("[AMJ-SUPERTLS] %s: Sending second ServerKeyExchange\n", __func__);
+    /* printf("[AMJ-SUPERTLS] %s: Sending second ServerKeyExchange\n", __func__); */
 
     EVP_MD_CTX_init(&md_ctx);
 
@@ -3889,7 +3876,7 @@ int ssl3_send_server_certificate(SSL *s)
 int ssl3_send_newsession_ticket(SSL *s)
 {
 
-	printf("[AMJ-SUPERTLS] %s: Sending new session ticket\n", __func__);
+	/* printf("[AMJ-SUPERTLS] %s: Sending new session ticket\n", __func__);*/
 
     unsigned char *senc = NULL;
     EVP_CIPHER_CTX ctx;

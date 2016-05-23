@@ -329,15 +329,11 @@ unsigned long ssl3_output_certs_chains(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_se
     if (!ssl_add_certs_chain(s, cpk, cpk_sec, &l))
         return 0;
 
-    printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
-
     l -= 3 + SSL_HM_HEADER_LENGTH(s);
     p = ssl_handshake_start(s);
     l2n3(l, p);
     l += 3;
     ssl_set_handshake_header(s, SSL3_MT_CERTIFICATE, l);
-
-    printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
 
     return l + SSL_HM_HEADER_LENGTH(s);
 }
@@ -349,8 +345,6 @@ unsigned long ssl3_output_cert_chain(SSL *s, CERT_PKEY *cpk)
 
     if (!ssl_add_cert_chain(s, cpk, &l))
         return 0;
-
-    printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
 
     l -= 3 + SSL_HM_HEADER_LENGTH(s);
     p = ssl_handshake_start(s);
@@ -372,8 +366,6 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
     long n;
     int i, al;
 
-    printf("[AMJ-SUPERTLS] %s: Entered ssl3_get_message\n", __func__);
-
     if (s->s3->tmp.reuse_message) {
         s->s3->tmp.reuse_message = 0;
         if ((mt >= 0) && (s->s3->tmp.message_type != mt)) {
@@ -389,7 +381,6 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
     }
 
     p = (unsigned char *)s->init_buf->data;
-    printf("[AMJ-SUPERTLS] %s: p[%d] = %u; len = %d\n", __func__, s->init_num, p[s->init_num], 4 - s->init_num);
 
     if (s->state == st1) {      /* s->init_num < 4 */
         int skip_message;

@@ -187,7 +187,7 @@ IMPLEMENT_ssl3_meth_func(SSLv3_client_method,
 #endif
 int ssl3_connect(SSL *s)
 {
-    printf("[AMJ-SUPERTLS] %s: Connecting to server\n", __func__);
+    /* printf("[AMJ-SUPERTLS] %s: Connecting to server\n", __func__); */
     
     BUF_MEM *buf = NULL;
     unsigned long Time = (unsigned long)time(NULL);
@@ -223,7 +223,7 @@ int ssl3_connect(SSL *s)
     for (;;) {
         state = s->state;
 
-        printf("[AMJ-SUPERTLS] %s: State: %i -- %s\n", __func__, state, SSL_state_string_long(s));
+        /* printf("[AMJ-SUPERTLS] %s: State: %i -- %s\n", __func__, state, SSL_state_string_long(s)); */
 
         switch (s->state) {
         case SSL_ST_RENEGOTIATE:
@@ -478,12 +478,12 @@ int ssl3_connect(SSL *s)
         case SSL3_ST_CW_CHANGE_A:
         case SSL3_ST_CW_CHANGE_B:
 
-        	printf("[AMJ-SUPERTLS] %s: Change cipher spec\n", __func__);
+        	/* printf("[AMJ-SUPERTLS] %s: Change cipher spec\n", __func__); */
 
-            if( s->session->secondary_cipher != NULL )
+            /* if( s->session->secondary_cipher != NULL )
         		printf("[AMJ-SUPERTLS] %s: SESSION->sec_cipher -- %s\n", __func__, s->session->secondary_cipher->name);
         	else
-        		printf("[AMJ-SUPERTLS] %s: SESSION->sec_cipher -- NULL\n", __func__);
+        		printf("[AMJ-SUPERTLS] %s: SESSION->sec_cipher -- NULL\n", __func__); */
 
             ret = ssl3_send_change_cipher_spec(s,
                                                SSL3_ST_CW_CHANGE_A,
@@ -505,7 +505,7 @@ int ssl3_connect(SSL *s)
             /* AMJ-SUPERTLS-IMPLEMENTATION */
             s->session->secondary_cipher = s->s3->tmp.new_cipher_sec;
 
-            printf("[AMJ-SUPERTLS] %s: Sec cipher: %s\n", __func__, SSL_get_sec_cipher(s));
+            /* printf("[AMJ-SUPERTLS] %s: Sec cipher: %s\n", __func__, SSL_get_sec_cipher(s)); */
 
 #ifdef OPENSSL_NO_COMP
             s->session->compress_meth = 0;
@@ -695,8 +695,6 @@ int ssl3_connect(SSL *s)
 
 int ssl3_client_hello(SSL *s)
 {
-	printf("[AMJ-SUPERTLS] Entering %s\n", __func__);
-
     unsigned char *buf;
     unsigned char *p, *d;
     int i;
@@ -822,8 +820,6 @@ int ssl3_client_hello(SSL *s)
         *(p++) = s->client_version & 0xff;
 #endif
 
-        printf("[AMJ-SUPERTLS] %s: Generating random stuff...\n", __func__);
-
         /* Random stuff */
         memcpy(p, s->s3->client_random, SSL3_RANDOM_SIZE);
         p += SSL3_RANDOM_SIZE;
@@ -860,11 +856,11 @@ int ssl3_client_hello(SSL *s)
         /* Print of the stacks supported by the client */
         SSL_CIPHER *c;
         STACK_OF(SSL_CIPHER) *sk = SSL_get_ciphers(s);
-		printf("[AMJ-SUPERTLS] Available ciphers (in order of preference): \n");
+		/* printf("[AMJ-SUPERTLS] Available ciphers (in order of preference): \n");
         for (i = 0; i < sk_SSL_CIPHER_num(sk); i++) {
         	c = sk_SSL_CIPHER_value(sk, i);
 			printf("[AMJ-SUPERTLS] %d: %s\n", i, c->name);
-        }
+        } */
 
         /* Ciphers supported */
         i = ssl_cipher_list_to_bytes(s, SSL_get_ciphers(s), &(p[2]), 0);
@@ -1085,8 +1081,8 @@ int ssl3_get_server_hello(SSL *s)
     p += j;
 
     c = ssl_get_cipher_by_char(s, p);
-    printf("[AMJ-SUPERTLS] %s: Received cipher from server\n", __func__);
-    printf("[AMJ-SUPERTLS] %s: %s\n", __func__, c->name);
+    /* printf("[AMJ-SUPERTLS] %s: Received cipher from server\n", __func__);
+    printf("[AMJ-SUPERTLS] %s: %s\n", __func__, c->name); */
 
     if (c == NULL) {
         /* unknown cipher */
@@ -1115,8 +1111,8 @@ int ssl3_get_server_hello(SSL *s)
 
     /* AMJ-SUPERTLS-IMPLEMENTATION: Getting the secondary cipher */
     c_secondary = ssl_get_cipher_by_char(s, p);
-    printf("[AMJ-SUPERTLS] %s: Received secondary cipher from server\n", __func__);
-    printf("[AMJ-SUPERTLS] %s: %s\n", __func__, c_secondary->name);
+    /* printf("[AMJ-SUPERTLS] %s: Received secondary cipher from server\n", __func__);
+    printf("[AMJ-SUPERTLS] %s: %s\n", __func__, c_secondary->name); */
 
     /* TODO: As for "c" above, check c_secondary */
 
@@ -1295,7 +1291,7 @@ int ssl3_get_server_certificate(SSL *s)
 
     n2l3(p, llen);
 
-    printf("[AMJ-SUPERTLS] %s: llen=%lu\n", __func__, llen);
+    /* printf("[AMJ-SUPERTLS] %s: llen=%lu\n", __func__, llen); */
 
     if (llen + 3 != n) {
         al = SSL_AD_DECODE_ERROR;
@@ -1304,7 +1300,7 @@ int ssl3_get_server_certificate(SSL *s)
     }
     for (nc = 0; nc < llen;) {
         n2l3(p, l);
-        printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
+        /* printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l); */
         if ((l + nc + 3) > llen) {
             al = SSL_AD_DECODE_ERROR;
             SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
@@ -1338,7 +1334,7 @@ int ssl3_get_server_certificate(SSL *s)
 
         /******* SECOND CERTIFICATE RETRIEVAL ********/
         n2l3(p, l);
-        printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l);
+        /* printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, l); */
         if ((l + nc + 3) > llen) {
         	al = SSL_AD_DECODE_ERROR;
 			SSLerr(SSL_F_SSL3_GET_SERVER_CERTIFICATE,
@@ -1611,8 +1607,6 @@ int ssl3_get_key_exchange(SSL *s)
         return ((int)n);
 
     alg_k = s->s3->tmp.new_cipher->algorithm_mkey;
-    /* AMJ-SUPERTLS: TODO*/
-    /* alg_k_s = s->s3->tmp.new_cipher_sec->algorithm_mkey */
 
     if (s->s3->tmp.message_type != SSL3_MT_SERVER_KEY_EXCHANGE) {
         /*

@@ -1090,8 +1090,6 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     STACK_OF(X509) *extra_certs, *extra_certs_sec;
     X509_STORE *chain_store, *chain_store_sec;
 
-    printf("[AMJ-SUPERTLS] %s: l=%lu\n", __func__, *l);
-
     if (cpk)
         x = cpk->x509;
     else
@@ -1134,8 +1132,6 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     else
         no_chain_sec = 0;
 
-    printf("[AMJ-SUPERTLS] %s: no_chain=%d; no_chain_sec=%d\n", __func__, no_chain, no_chain_sec);
-
     /* TLSv1 sends a chain with nothing in it, instead of an alert */
     if (!BUF_MEM_grow_clean(buf, 10)) {
         SSLerr(SSL_F_SSL_ADD_CERT_CHAIN, ERR_R_BUF_LIB);
@@ -1143,11 +1139,9 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
     }
     if (x != NULL) {
         if (no_chain) {
-        	printf("[AMJ-SUPERTLS] %s: cpk: No chain certificates.\n", __func__);
             if (!ssl_add_cert_to_buf(buf, l, x))
                 return 0;
         } else {
-        	printf("[AMJ-SUPERTLS] %s: cpk: Chain certificates.\n", __func__);
             X509_STORE_CTX xs_ctx;
 
             if (!X509_STORE_CTX_init(&xs_ctx, chain_store, x, NULL)) {
@@ -1160,15 +1154,10 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
             for (i = 0; i < sk_X509_num(xs_ctx.chain); i++) {
                 x = sk_X509_value(xs_ctx.chain, i);
 
-                printf("[AMJ-SUPERTLS] %s: x-before: l=%lu\n", __func__, *l);
-
                 if (!ssl_add_cert_to_buf(buf, l, x)) {
                     X509_STORE_CTX_cleanup(&xs_ctx);
                     return 0;
                 }
-
-                printf("[AMJ-SUPERTLS] %s: x-after: l=%lu\n", __func__, *l);
-
             }
             X509_STORE_CTX_cleanup(&xs_ctx);
         }
@@ -1179,11 +1168,9 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
 
     if (x_sec != NULL) {
         if (no_chain_sec) {
-        	printf("[AMJ-SUPERTLS] %s: cpk_sec: No chain certificates.\n", __func__);
             if (!ssl_add_cert_to_buf(buf, l, x_sec))
                 return 0;
         } else {
-        	printf("[AMJ-SUPERTLS] %s: cpk_sec: Chain certificates.\n", __func__);
             X509_STORE_CTX xs_ctx_sec;
 
             if (!X509_STORE_CTX_init(&xs_ctx_sec, chain_store_sec, x_sec, NULL)) {
@@ -1196,15 +1183,10 @@ int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned lon
             for (i = 0; i < sk_X509_num(xs_ctx_sec.chain); i++) {
                 x_sec = sk_X509_value(xs_ctx_sec.chain, i);
 
-                printf("[AMJ-SUPERTLS] %s: x_sec-before: l=%lu\n", __func__, *l);
-
                 if (!ssl_add_cert_to_buf(buf, l, x_sec)) {
                     X509_STORE_CTX_cleanup(&xs_ctx_sec);
                     return 0;
                 }
-
-                printf("[AMJ-SUPERTLS] %s: x_sec-after: l=%lu\n", __func__, *l);
-
             }
             X509_STORE_CTX_cleanup(&xs_ctx_sec);
         }
@@ -1268,11 +1250,9 @@ int ssl_add_cert_chain(SSL *s, CERT_PKEY *cpk, unsigned long *l)
     }
     if (x != NULL) {
         if (no_chain) {
-        	printf("[AMJ-SUPERTLS] %s: No chain certificates.\n", __func__);
             if (!ssl_add_cert_to_buf(buf, l, x))
                 return 0;
         } else {
-        	printf("[AMJ-SUPERTLS] %s: Chain certificates.\n", __func__);
             X509_STORE_CTX xs_ctx;
 
             if (!X509_STORE_CTX_init(&xs_ctx, chain_store, x, NULL)) {
