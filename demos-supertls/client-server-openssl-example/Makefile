@@ -1,10 +1,10 @@
 all: client server
 
-client: client.cpp
-	g++ -o client -g client.cpp -L/usr/local/supertls/lib -lssl -lcrypto -ldl
+client: cli.cpp
+	g++ -o client -g cli.cpp -L/usr/include/openssl -lssl -lcrypto -ldl
 	
-server: server.cpp
-	g++ -o server -g server.cpp -L/usr/local/supertls/lib -lssl -lcrypto -ldl
+server: serv.cpp
+	g++ -o server -g serv.cpp -L/usr/include/openssl -lssl -lcrypto -ldl
 
 clean:
 	rm -f *.o client server

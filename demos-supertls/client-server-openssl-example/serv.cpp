@@ -2,7 +2,7 @@
    30.9.1996, Sampo Kellomaki <sampo@iki.fi> */
 
 
-/* mangled to work with SSLeay-0.9.0b and OpenSSL 0.9.2b
+/* mangled to work with OpenSSL 0.9.2b
    Simplified to be even more minimal
    12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
 
@@ -16,57 +16,64 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/time.h>
 
-#include <openssl/rsa.h>       /* SSLeay stuff */
+#include <openssl/rsa.h>
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+#include <string>
 
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
 /* Make these what you want for cert & key files */
-#define CERTF  HOME "foo-cert.pem"
-#define KEYF  HOME  "foo-cert.pem"
 
+/*ECDHE-ECDSA*/
+#define ECDH_CERTF  "server-ecdhe-cert.crt"
+#define ECDH_KEYF   "server-ecdhe-key.pem"
+
+#define MAX_MSG_SIZE 16250
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-void main ()
+int main (int argc, char* argv[])
 {
-  int err;
-  int listen_sd;
-  int sd;
+  int       err;
+  int       listen_sd;
+  int       sd;
   struct sockaddr_in sa_serv;
   struct sockaddr_in sa_cli;
-  size_t client_len;
-  SSL_CTX* ctx;
-  SSL*     ssl;
-  X509*    client_cert;
-  char*    str;
-  char     buf [4096];
-  SSL_METHOD *meth;
+  socklen_t    client_len;
+  SSL_CTX*  ctx;
+  SSL*      ssl;
+  X509*     client_cert;
+  char*     str;
+  char      buf [4096];
+  SSL_METHOD const *meth;
   
   /* SSL preliminaries. We keep the certificate and key with the context. */
 
   SSL_load_error_strings();
-  SSLeay_add_ssl_algorithms();
-  meth = SSLv23_server_method();
+  OpenSSL_add_ssl_algorithms();
+  meth = TLSv1_2_method();
+  
   ctx = SSL_CTX_new (meth);
+  
   if (!ctx) {
     ERR_print_errors_fp(stderr);
     exit(2);
   }
   
-  if (SSL_CTX_use_certificate_file(ctx, CERTF, SSL_FILETYPE_PEM) <= 0) {
+  if (SSL_CTX_use_certificate_file(ctx, ECDH_CERTF, SSL_FILETYPE_PEM) <= 0) {
     ERR_print_errors_fp(stderr);
     exit(3);
   }
-  if (SSL_CTX_use_PrivateKey_file(ctx, KEYF, SSL_FILETYPE_PEM) <= 0) {
+  if (SSL_CTX_use_PrivateKey_file(ctx, ECDH_KEYF, SSL_FILETYPE_PEM) <= 0) {
     ERR_print_errors_fp(stderr);
     exit(4);
   }
@@ -81,7 +88,7 @@ void main ()
 
   listen_sd = socket (AF_INET, SOCK_STREAM, 0);   CHK_ERR(listen_sd, "socket");
   
-  memset (&sa_serv, '\0', sizeof(sa_serv));
+  memset(&sa_serv, 0, sizeof(sa_serv));
   sa_serv.sin_family      = AF_INET;
   sa_serv.sin_addr.s_addr = INADDR_ANY;
   sa_serv.sin_port        = htons (1111);          /* Server Port number */
@@ -104,49 +111,25 @@ void main ()
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */
 
-  ssl = SSL_new (ctx);                           CHK_NULL(ssl);
+  ssl = SSL_new (ctx);                           CHK_NULL(ssl);     /* CHECKED */
   SSL_set_fd (ssl, sd);
-  err = SSL_accept (ssl);                        CHK_SSL(err);
+  err = SSL_accept (ssl);                        CHK_SSL(err);      /* CHECKED */
   
   /* Get the cipher - opt */
   
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
   
-  /* Get client's certificate (note: beware of dynamic allocation) - opt */
-
-  client_cert = SSL_get_peer_certificate (ssl);
-  if (client_cert != NULL) {
-    printf ("Client certificate:\n");
-    
-    str = X509_NAME_oneline (X509_get_subject_name (client_cert), 0, 0);
-    CHK_NULL(str);
-    printf ("\t subject: %s\n", str);
-    OPENSSL_free (str);
-    
-    str = X509_NAME_oneline (X509_get_issuer_name  (client_cert), 0, 0);
-    CHK_NULL(str);
-    printf ("\t issuer: %s\n", str);
-    OPENSSL_free (str);
-    
-    /* We could do all sorts of certificate verification stuff here before
-       deallocating the certificate. */
-    
-    X509_free (client_cert);
-  } else
-    printf ("Client does not have certificate.\n");
-
   /* DATA EXCHANGE - Receive message and send reply. */
-
+    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                   CHK_SSL(err);
   buf[err] = '\0';
   printf ("Got %d chars:'%s'\n", err, buf);
   
-  err = SSL_write (ssl, "I hear you.", strlen("I hear you."));  CHK_SSL(err);
-
-  /* Clean up. */
-
   close (sd);
   SSL_free (ssl);
   SSL_CTX_free (ctx);
+  
+  return 0;
+  
 }
 /* EOF - serv.cpp */
