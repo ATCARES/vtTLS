@@ -286,9 +286,6 @@ int SSL_CTX_set_ssl_version(SSL_CTX *ctx, const SSL_METHOD *meth)
 
 SSL *SSL_new(SSL_CTX *ctx)
 {
-
-    printf("[AMJ-SUPERTLS] Creating a new SSL structure using SSL_new\n");    
-
     SSL *s;
 
     if (ctx == NULL) {
@@ -734,9 +731,7 @@ int SSL_get_wfd(const SSL *s)
 #ifndef OPENSSL_NO_SOCK
 int SSL_set_fd(SSL *s, int fd)
 {
-    
-    printf("[AMJ-SUPERTLS] %s: Associating fd to SSL\n", __func__);
-    
+
     int ret = 0;
     BIO *bio = NULL;
 
@@ -1033,9 +1028,6 @@ int SSL_check_private_key(const SSL *ssl)
 
 int SSL_accept(SSL *s)
 {
-
-    printf("[AMJ-SUPERTLS] Server called function SSL_accept\n");    
-
     if (s->handshake_func == 0)
         /* Not properly initialized yet */
         SSL_set_accept_state(s);
@@ -1045,9 +1037,6 @@ int SSL_accept(SSL *s)
 
 int SSL_connect(SSL *s)
 {
-
-    printf("[AMJ-SUPERTLS] Client called function SSL_connect\n");
-
     if (s->handshake_func == 0)
         /* Not properly initialized yet */
         SSL_set_connect_state(s);
@@ -1922,8 +1911,6 @@ static IMPLEMENT_LHASH_COMP_FN(ssl_session, SSL_SESSION)
 
 SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
 {
-    printf("[AMJ-SUPERTLS] %s: Creating a new SSL context\n", __func__);
-    
     SSL_CTX *ret = NULL;
 
     if (meth == NULL) {

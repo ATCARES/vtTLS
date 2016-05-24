@@ -559,10 +559,10 @@ int SSL_CTX_use_certificate_file(SSL_CTX *ctx, const char *file, int type)
 
     ret = SSL_CTX_use_certificate(ctx, x);
 
-    if(ctx->cert == NULL)
+    /* if(ctx->cert == NULL)
     	printf("[AMJ-SUPERTLS] %s: cert is null\n", __func__);
     else
-    	printf("[AMJ-SUPERTLS] %s: cert is not null\n", __func__);
+    	printf("[AMJ-SUPERTLS] %s: cert is not null\n", __func__);*/
 
  end:
     if (x != NULL)
@@ -608,10 +608,10 @@ int SSL_CTX_use_second_certificate_file(SSL_CTX *ctx, const char *file, int type
 
     ret = SSL_CTX_use_second_certificate(ctx, x);
 
-    if(ctx->cert_sec == NULL)
+    /*if(ctx->cert_sec == NULL)
     	printf("[AMJ-SUPERTLS] %s: cert_sec is null\n", __func__);
     else
-    	printf("[AMJ-SUPERTLS] %s: cert_sec is not null\n", __func__);
+    	printf("[AMJ-SUPERTLS] %s: cert_sec is not null\n", __func__);*/
 
  end:
     if (x != NULL)
