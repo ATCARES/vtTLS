@@ -87,7 +87,7 @@ int main (int argc, char* argv[])
   memset(&sa, 0, sizeof(sa));
   
   sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr ("178.17.39.8");   /* Server IP */
+  sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
   sa.sin_port        = htons     (1111);          /* Server Port number */
   
   err = connect(sd, (struct sockaddr*) &sa,
