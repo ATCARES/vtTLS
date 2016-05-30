@@ -50,7 +50,7 @@ int main (int argc, char* argv[])
 
 
   if(argc != 2){
-    printf("Usage: ./client <message-to-send>\n");
+    printf("Usage: ./client <file-to-download>\n");
     exit(0);
   }
   
@@ -106,14 +106,16 @@ int main (int argc, char* argv[])
   unsigned long long diff;
   int i = 0;
   
-  gettimeofday(&start, NULL);
+  /* gettimeofday(&start, NULL); */
   
   err = SSL_connect (ssl);                     CHK_SSL(err);
   
+  /*
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
   printf ("The OpenSSL Handshake took %llu ms\n", diff);
   diff = 0;
+  */
   
   /* ssl->method->ssl_connect(s)*/
     
@@ -148,9 +150,38 @@ int main (int argc, char* argv[])
 
   err = SSL_write (ssl, argv[1], strlen(argv[1]));  CHK_SSL(err);
   
+  FILE *file_to_receive = fopen(argv[1], "ab+");
+  file_to_receive = fopen(argv[1], "w+");
+  
+  err = SSL_read (ssl, buf, sizeof(buf) - 1);
+  buf[err] = '\0';
+  printf ("Got %d chars: %s\n", err, buf);
+  
+  long file_len = strtol (buf, (char**) NULL, 10);
+  printf("filelen = %ld\n", file_len);
+  
+  char* buffer = (char*) malloc ((file_len+1)*sizeof(char));
+  
+  err = 0;
+  int total_size = 0;
+  i = file_len;
+  
+  for (i = file_len; i - MAX_MSG_SIZE < 0; i -= MAX_MSG_SIZE){
+    err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
+  }
+  
+  err += SSL_read (ssl, buffer+err, i);
+  
+  fprintf(file_to_receive, "%s", buffer);
+  
+  printf("-- total_size=%d\n", err);
+  
   SSL_shutdown (ssl);  /* send SSL/TLS close_notify */
 
   /* Clean up. */
+  
+  free(buffer);
+  fclose(file_to_receive);
   
   close (sd);
   SSL_free (ssl);

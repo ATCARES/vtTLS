@@ -113,6 +113,7 @@ int main (int argc, char* argv[])
 
   ssl = SSL_new (ctx);                           CHK_NULL(ssl);     /* CHECKED */
   SSL_set_fd (ssl, sd);
+  
   err = SSL_accept (ssl);                        CHK_SSL(err);      /* CHECKED */
   
   /* Get the cipher - opt */
@@ -124,6 +125,38 @@ int main (int argc, char* argv[])
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                   CHK_SSL(err);
   buf[err] = '\0';
   printf ("Got %d chars:'%s'\n", err, buf);
+  
+  FILE *file;
+  char* buffer;
+  long file_len;
+  
+  file = fopen(buf, "rb");
+  fseek(file, 0, SEEK_END);
+  file_len = ftell(file);
+  rewind(file);
+  
+  buffer = (char*) malloc ((file_len+1)*sizeof(char));
+  fread(buffer, file_len, 1, file);
+  buffer[file_len] = '\0';
+  fclose(file);
+  
+  char filelen[512];
+  sprintf(filelen, "%d", file_len);
+  
+  err = SSL_write (ssl, filelen, strlen(filelen));
+  
+  err = 0;
+  int i = file_len;
+  
+  for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+    err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
+  }
+  
+  err += SSL_write (ssl, buffer+err, i);
+ 
+  printf("-- total_size= %d\n", err);
+  
+  free(buffer);
   
   close (sd);
   SSL_free (ssl);
