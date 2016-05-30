@@ -185,9 +185,9 @@ int main (int argc, char* argv[])
       
   char filelen[512];
   sprintf(filelen, "%d", file_len);
-  
+    
   err = SSL_write (ssl, filelen, strlen(filelen));
-
+  
   err = 0;
   int i = file_len;
   
