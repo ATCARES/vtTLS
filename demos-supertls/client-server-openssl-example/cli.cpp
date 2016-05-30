@@ -87,7 +87,7 @@ int main (int argc, char* argv[])
   memset(&sa, 0, sizeof(sa));
   
   sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
+  sa.sin_addr.s_addr = inet_addr ("178.17.39.8");   /* Server IP */
   sa.sin_port        = htons     (1111);          /* Server Port number */
   
   err = connect(sd, (struct sockaddr*) &sa,
@@ -147,41 +147,41 @@ int main (int argc, char* argv[])
   
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
-
   err = SSL_write (ssl, argv[1], strlen(argv[1]));  CHK_SSL(err);
   
-  FILE *file_to_receive = fopen(argv[1], "ab+");
-  file_to_receive = fopen(argv[1], "w+");
-  
-  err = SSL_read (ssl, buf, sizeof(buf) - 1);
+  FILE *file_rcv = fopen(argv[1], "ab+");
+  file_rcv = fopen(argv[1], "w+");
+   
+  err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
   buf[err] = '\0';
-  printf ("Got %d chars: %s\n", err, buf);
+  printf ("Got %d chars:'%s'\n", err, buf);
   
-  long file_len = strtol (buf, (char**) NULL, 10);
+  long file_len = strtol(buf, (char**) NULL, 10);
+  
   printf("filelen = %ld\n", file_len);
   
-  char* buffer = (char*) malloc ((file_len+1)*sizeof(char));
+  char *buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
   
   err = 0;
   int total_size = 0;
   i = file_len;
   
-  for (i = file_len; i - MAX_MSG_SIZE < 0; i -= MAX_MSG_SIZE){
+  for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
     err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
   }
   
   err += SSL_read (ssl, buffer+err, i);
+
+  fprintf(file_rcv, "%s", buffer);
   
-  fprintf(file_to_receive, "%s", buffer);
-  
-  printf("-- total_size=%d\n", err);
+  printf("-- total_size: %d\n", err);
   
   SSL_shutdown (ssl);  /* send SSL/TLS close_notify */
 
   /* Clean up. */
-  
+
   free(buffer);
-  fclose(file_to_receive);
+  fclose(file_rcv);
   
   close (sd);
   SSL_free (ssl);
