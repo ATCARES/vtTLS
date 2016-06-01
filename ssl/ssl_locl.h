@@ -856,7 +856,6 @@ extern SSL3_ENC_METHOD DTLSv1_2_enc_data;
                                 s_get_meth, enc_data) \
 const SSL_METHOD *func_name(void)  \
         { \
-        printf("[AMJ-SUPERTLS] Called %s\n", __func__); \
         static const SSL_METHOD func_name##_data= { \
                 version, \
                 tls1_new, \

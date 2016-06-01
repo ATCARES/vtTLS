@@ -90,7 +90,7 @@ int main (int argc, char* argv[])
   
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf ("The SuperTLS Handshake took %llu ms\n", diff);
+  // printf ("The SuperTLS Handshake took %llu ms\n", diff);
   diff = 0;
   
   /* ssl->method->ssl_connect(s)*/
@@ -100,12 +100,13 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
 
+  /*
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
   printf ("SSL connection using %s\n", SSL_get_sec_cipher (ssl));
-
+  */
   
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
-
+  /*
   server_cert = SSL_get_peer_certificate (ssl);       			 CHK_NULL(server_cert);
   
   server_sec_cert = SSL_get_second_peer_certificate (ssl);       CHK_NULL(server_sec_cert);
@@ -133,13 +134,13 @@ int main (int argc, char* argv[])
   CHK_NULL(str);
   printf ("\t issuer: %s\n", str);
   OPENSSL_free (str);
-
+  */
   /* We could do all sorts of certificate verification stuff here before
      deallocating the certificate. */
-
+/*
   X509_free (server_cert);
   X509_free (server_sec_cert);
-  
+  */
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
@@ -150,11 +151,11 @@ int main (int argc, char* argv[])
    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
   buf[err] = '\0';
-  printf ("Got %d chars:'%s'\n", err, buf);
+  // printf ("Got %d chars:'%s'\n", err, buf);
   
   long file_len = strtol(buf, (char**) NULL, 10);
   
-  printf("filelen = %ld\n", file_len);
+  // printf("filelen = %ld\n", file_len);
   
   char *buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
   
@@ -172,12 +173,13 @@ int main (int argc, char* argv[])
   
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf ("The SuperTLS took %llu ms to read %s.\n", diff, argv[2]);
+  printf ("%llu\n", diff);
+  // printf ("The SuperTLS took %llu ms to read %s.\n", diff, argv[2]);
   diff = 0;
 
   fprintf(file_rcv, "%s", buffer);
   
-  printf("-- total_size: %d\n", err);
+  // printf("-- total_size: %d\n", err);
   
   SSL_shutdown (ssl);  /* send SSL/TLS close_notify */
 

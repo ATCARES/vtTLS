@@ -63,7 +63,6 @@
 
 int SSL_library_init(void)
 {
-    printf("[AMJ-SUPERTLS] Initalizing the library of ciphers and digests...\n");
 
 #ifndef OPENSSL_NO_DES
     EVP_add_cipher(EVP_des_cbc());
@@ -152,8 +151,6 @@ int SSL_library_init(void)
 #endif
     /* initialize cipher/digest methods table */
     ssl_load_ciphers();
-    
-    printf("[AMJ-SUPERTLS] Finished initializing the library of ciphers and digests!\n");
-    
+
     return (1);
 }
