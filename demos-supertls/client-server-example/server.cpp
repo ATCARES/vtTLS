@@ -119,8 +119,8 @@ int main (int argc, char* argv[])
   CHK_ERR(sd, "accept");
   close (listen_sd);
 
-  printf ("Connection from %lx, port %x\n",
-	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);
+  /* printf ("Connection from %lx, port %x\n",
+	  sa_cli.sin_addr.s_addr, sa_cli.sin_port); */
   
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */
@@ -131,13 +131,15 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
   
-  printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_sec_cipher (ssl));
+  /* printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
+  printf ("SSL connection using %s\n", SSL_get_sec_cipher (ssl));*/ 
   
   /* Get client's certificate (note: beware of dynamic allocation) - opt */
 
+  /*
   client_cert = SSL_get_peer_certificate (ssl);
   if (client_cert != NULL) {
+    
     printf ("Client certificate:\n");
     
     str = X509_NAME_oneline (X509_get_subject_name (client_cert), 0, 0);
@@ -148,20 +150,19 @@ int main (int argc, char* argv[])
     str = X509_NAME_oneline (X509_get_issuer_name  (client_cert), 0, 0);
     CHK_NULL(str);
     printf ("\t issuer: %s\n", str);
-    OPENSSL_free (str);
-    
-    /* We could do all sorts of certificate verification stuff here before
-       deallocating the certificate. */
-    
+    OPENSSL_free (str);    
     X509_free (client_cert);
+    
   } else
     printf ("Client does not have certificate.\n");
+  
+  */
 
   /* DATA EXCHANGE - Receive message and send reply. */
     
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                   CHK_SSL(err);
   buf[err] = '\0';
-  printf ("Got %d chars:'%s'\n", err, buf);
+  // printf ("Got %d chars:'%s'\n", err, buf);
    
   FILE *file;
   char *buffer;
@@ -196,10 +197,11 @@ int main (int argc, char* argv[])
 
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf ("The SuperTLS took %llu ms to send %s.\n", diff, buf);
+  printf ("%llu\n", diff);
+  // printf ("The SuperTLS took %llu ms to send %s.\n", diff, buf);
   diff = 0;
   
-  printf("-- total_size: %d\n", err);
+  // printf("-- total_size: %d\n", err);
     
   /* Clean up. */
 
