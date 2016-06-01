@@ -13,8 +13,8 @@ SHLIB_MAJOR=1
 SHLIB_MINOR=0.0
 SHLIB_EXT=.so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
 PLATFORM=debug-linux-x86_64
-OPTIONS=--prefix=/usr/local/supertls -Wa,--noexecstack no-ec_nistp_64_gcc_128 no-gmp no-jpake no-krb5 no-libunbound no-md2 no-rc5 no-rfc3779 no-sctp no-shared no-ssl-trace no-store no-unit-test no-zlib no-zlib-dynamic static-engine
-CONFIGURE_ARGS=debug-linux-x86_64 --prefix=/usr/local/supertls -Wa,--noexecstack
+OPTIONS=--openssldir=/usr/local/supertls -Wa,--noexecstack no-ec_nistp_64_gcc_128 no-gmp no-jpake no-krb5 no-libunbound no-md2 no-rc5 no-rfc3779 no-sctp no-shared no-ssl-trace no-store no-unit-test no-zlib no-zlib-dynamic static-engine
+CONFIGURE_ARGS=debug-linux-x86_64 --openssldir=/usr/local/supertls -Wa,--noexecstack
 SHLIB_TARGET=linux-shared
 
 # HERE indicates where this Makefile lives.  This can be used to indicate
@@ -29,7 +29,7 @@ INSTALL_PREFIX=
 INSTALLTOP=/usr/local/supertls
 
 # Do not edit this manually. Use Configure --openssldir=DIR do change this!
-OPENSSLDIR=/usr/local/supertls/ssl
+OPENSSLDIR=/usr/local/supertls
 
 # NO_IDEA - Define to build without the IDEA algorithm
 # NO_RC4  - Define to build without the RC4 algorithm

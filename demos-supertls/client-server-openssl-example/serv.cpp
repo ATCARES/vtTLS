@@ -55,6 +55,8 @@ int main (int argc, char* argv[])
   char*     str;
   char      buf [4096];
   SSL_METHOD const *meth;
+  unsigned long long diff;
+  timeval start, end;
   
   /* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -105,8 +107,8 @@ int main (int argc, char* argv[])
   CHK_ERR(sd, "accept");
   close (listen_sd);
 
-  printf ("Connection from %lx, port %x\n",
-	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);
+  /*printf ("Connection from %lx, port %x\n",
+	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);*/
   
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */
@@ -118,13 +120,13 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
   
-  printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
+  // printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
   
   /* DATA EXCHANGE - Receive message and send reply. */
     
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                   CHK_SSL(err);
   buf[err] = '\0';
-  printf ("Got %d chars:'%s'\n", err, buf);
+  // printf ("Got %d chars:'%s'\n", err, buf);
   
   FILE *file;
   char *buffer;
@@ -148,13 +150,21 @@ int main (int argc, char* argv[])
   err = 0;
   int i = file_len;
   
+  gettimeofday(&start, NULL);
+
   for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
     err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
   }
   
   err += SSL_write (ssl, buffer+err, i);
+
+  gettimeofday(&end, NULL);
+  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+  printf("%llu\n", diff);
+  // printf ("The OpenSSL Handshake took %llu ms\n", diff);
+  diff = 0;
   
-  printf("total_size: %d\n", err);
+  // printf("total_size: %d\n", err);
     
   /* Clean up. */
 

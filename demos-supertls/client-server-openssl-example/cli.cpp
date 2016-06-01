@@ -49,8 +49,8 @@ int main (int argc, char* argv[])
   timeval start, end;
 
 
-  if(argc != 2){
-    printf("Usage: ./client <file-to-download>\n");
+  if(argc != 3){
+    printf("Usage: ./client <server-ip> <file-to-download>\n");
     exit(0);
   }
   
@@ -87,7 +87,7 @@ int main (int argc, char* argv[])
   memset(&sa, 0, sizeof(sa));
   
   sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
+  sa.sin_addr.s_addr = inet_addr (argv[1]);   /* Server IP */
   sa.sin_port        = htons     (1111);          /* Server Port number */
   
   err = connect(sd, (struct sockaddr*) &sa,
@@ -123,14 +123,13 @@ int main (int argc, char* argv[])
      data exchange to be successful. */
   
   /* Get the cipher - opt */
+  //printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
 
-  printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-
-  
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
 
   server_cert = SSL_get_peer_certificate (ssl);       			 CHK_NULL(server_cert);
 
+  /*
   printf ("Server certificate:\n");
   
   str = X509_NAME_oneline (X509_get_subject_name (server_cert),0,0);
@@ -144,21 +143,21 @@ int main (int argc, char* argv[])
   OPENSSL_free (str);
 
   X509_free (server_cert);
-  
+  */
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
-  err = SSL_write (ssl, argv[1], strlen(argv[1]));  CHK_SSL(err);
+  err = SSL_write (ssl, argv[2], strlen(argv[2]));  CHK_SSL(err);
   
-  FILE *file_rcv = fopen(argv[1], "ab+");
+  FILE *file_rcv = fopen(argv[2], "ab+");
   file_rcv = fopen(argv[1], "w+");
    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
   buf[err] = '\0';
-  printf ("Got %d chars:'%s'\n", err, buf);
+  // printf ("Got %d chars:'%s'\n", err, buf);
   
   long file_len = strtol(buf, (char**) NULL, 10);
   
-  printf("filelen = %ld\n", file_len);
+  // printf("filelen = %ld\n", file_len);
   
   char *buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
   
@@ -166,15 +165,23 @@ int main (int argc, char* argv[])
   int total_size = 0;
   i = file_len;
   
+  gettimeofday(&start, NULL);
+  
   for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
     err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
   }
+  
+  gettimeofday(&end, NULL);
+  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+  printf ("%llu\n", diff);
+  //printf ("The OpenSSL Handshake took %llu ms\n", diff);
+  diff = 0;
   
   err += SSL_read (ssl, buffer+err, i);
 
   fprintf(file_rcv, "%s", buffer);
   
-  printf("-- total_size: %d\n", err);
+  // printf("-- total_size: %d\n", err);
   
   SSL_shutdown (ssl);  /* send SSL/TLS close_notify */
 
