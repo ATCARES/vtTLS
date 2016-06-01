@@ -1,10 +1,3 @@
-/* cli.cpp  -  Minimal ssleay client for Unix
-   30.9.1996, Sampo Kellomaki <sampo@iki.fi> */
-
-/* mangled to work with OpenSSL 0.9.2b
-   Simplified to be even more minimal
-   12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
-
 #include <stdio.h>
 #include <memory.h>
 #include <errno.h>
@@ -169,11 +162,18 @@ int main (int argc, char* argv[])
   int total_size = 0;
   i = file_len;
   
+  gettimeofday(&start, NULL);
+  
   for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
     err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
   }
   
   err += SSL_read (ssl, buffer+err, i);
+  
+  gettimeofday(&end, NULL);
+  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+  printf ("The SuperTLS took %llu ms to read %s.\n", diff, argv[2]);
+  diff = 0;
 
   fprintf(file_rcv, "%s", buffer);
   

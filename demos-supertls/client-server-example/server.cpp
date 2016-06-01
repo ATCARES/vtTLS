@@ -1,11 +1,3 @@
-/* serv.cpp  -  Minimal ssleay server for Unix
-   30.9.1996, Sampo Kellomaki <sampo@iki.fi> */
-
-
-/* mangled to work with OpenSSL 0.9.2b
-   Simplified to be even more minimal
-   12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -61,6 +53,8 @@ int main (int argc, char* argv[])
   char*     str;
   char      buf [4096];
   SSL_METHOD const *meth;
+  unsigned long long diff;
+
   
   /* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -190,14 +184,22 @@ int main (int argc, char* argv[])
   
   err = 0;
   int i = file_len;
+
+  timeval start, end;
+  gettimeofday(&start, NULL);
   
   for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
     err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
   }
   
   err += SSL_write (ssl, buffer+err, i);
+
+  gettimeofday(&end, NULL);
+  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+  printf ("The SuperTLS took %llu ms to send %s.\n", diff, buf);
+  diff = 0;
   
-  printf("total_size: %d\n", err);
+  printf("-- total_size: %d\n", err);
     
   /* Clean up. */
 
