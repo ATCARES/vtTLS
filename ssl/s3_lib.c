@@ -4045,7 +4045,41 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 	CERT *cert_sec;
 	unsigned long alg_k, alg_a, mask_k, mask_a, emask_k, emask_a;
 
-	/* Let's see which ciphers we can support */
+	/* Prefered algorithms based on the first cipher */
+	SSL_CIPHER *first_c = s->s3->tmp.new_cipher;
+	int ok_mkey, ok_auth, ok_enc, ok_mac;
+    unsigned long pref_mkey, pref_auth, pref_enc, pref_mac;
+
+    if (first_c->algorithm_mkey & SSL_kECDHe) /* If my key exchange algorithm is ECDH/ECDHE */
+    	pref_mkey = SSL_kRSA;
+    else if (first_c->algorithm_mkey & SSL_kEECDH) /* If my key exchange algorithm is ECDH/ECDHE */
+    	pref_mkey = SSL_kRSA;
+    else if (first_c->algorithm_mkey & SSL_kRSA)
+    	pref_mkey = SSL_kECDHe;				/* This should be SSL_kEECDH */
+    else
+    	pref_mkey = SSL_kEECDH;
+
+    if (first_c->algorithm_auth & SSL_aRSA) /* If my authentication algorithm is RSA */
+    	pref_auth = SSL_aECDH;
+    else
+    	pref_auth = SSL_aRSA;
+
+    if (first_c->algorithm_enc & SSL_AES256GCM)
+    	pref_enc = SSL_AES128;
+    else if (first_c->algorithm_enc & SSL_AES128GCM)
+    	pref_enc = SSL_AES256;
+    else if (first_c->algorithm_enc & SSL_AES256)
+    	pref_enc = SSL_AES128GCM;
+    /*else if (first_c->algorithm_enc & SSL_AES128)
+    	pref_enc = SSL_AES256GCM;*/
+    else
+    	pref_enc = SSL_AES256GCM;
+
+    if(first_c->algorithm_mac & SSL_AEAD)
+    	pref_mac = SSL_SHA256;			/* AEAD uses, effectively, SHA-384 in most cases */
+    else
+    	pref_mac = SSL_AEAD;
+
 	if (s->cert_sec != NULL)
 		cert_sec = s->cert_sec;
 	else
@@ -4073,6 +4107,7 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 		mask_a = cert_sec->mask_a;
 		emask_k = cert_sec->export_mask_k;
 		emask_a = cert_sec->export_mask_a;
+
 #ifndef OPENSSL_NO_SRP
 		if (s->srp_ctx.srp_Mask & SSL_kSRP) {
 			mask_k |= SSL_kSRP;
@@ -4122,6 +4157,14 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 
 		ii = sk_SSL_CIPHER_find(allow, c);
 
+		ok_mkey = alg_k & pref_mkey;
+		ok_auth = alg_a & pref_auth;
+		ok_enc = c->algorithm_enc & pref_enc;
+		ok_mac = c->algorithm_mac & pref_mac;
+
+		if (!(ok_mkey && ok_auth && ok_enc && ok_mac))
+			continue;
+
 		if (ii >= 0) {
 #if !defined(OPENSSL_NO_EC) && !defined(OPENSSL_NO_TLSEXT)
 			if ((alg_k & SSL_kEECDH) && (alg_a & SSL_aECDSA)
@@ -4142,17 +4185,6 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 			 * This is because the time wasted in trying to reach a "better"
 			 * combination does not compensate the increase in "betterness"
 			 * of the combination.
-			 *
-			 * Optimal combinations:
-			 * 1. ECDHE-ECDSA-AES256-GCM-SHA384  TLSv1.2 Kx=ECDH Au=ECDSA Enc=AESGCM(256) Mac=AEAD
-			 *    AES256-SHA256                  TLSv1.2 Kx=RSA  Au=RSA   Enc=AES(256)    Mac=SHA256
-			 *
-			 * 2. ECDHE-ECDSA-AES256-GCM-SHA384  TLSv1.2 Kx=ECDH Au=ECDSA Enc=AESGCM(256) Mac=AEAD
-			 *    AES256-GCM-SHA384              TLSv1.2 Kx=RSA  Au=RSA   Enc=AESGCM(256) Mac=AEAD
-			 *
-			 * Sub-optimal combinations:
-			 * 3. DHE-DSS-AES256-GCM-SHA384      TLSv1.2 Kx=DH   Au=RSA   Enc=AESGCM(256) Mac=AEAD
-			 *    AES256-GCM-SHA384              TLSv1.2 Kx=RSA  Au=RSA   Enc=AESGCM(256) Mac=AEAD
 			 *
 			 */
 

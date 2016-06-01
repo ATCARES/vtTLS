@@ -24,9 +24,6 @@
 
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
-/* Make these what you want for cert & key files */
-#define CERTF  "client.crt"
-#define KEYF   "client.key"
 
 #define MAX_MSG_SIZE 16250
 
@@ -49,8 +46,8 @@ int main (int argc, char* argv[])
   timeval start, end;
 
 
-  if(argc != 2){
-    printf("Usage: ./client <file-to-download>\n");
+  if(argc != 3){
+    printf("Usage: ./client <server-ip> <file-to-download>\n");
     exit(0);
   }
   
@@ -65,20 +62,6 @@ int main (int argc, char* argv[])
     ERR_print_errors_fp(stderr);
     exit(2);
   }
-  
-  if (SSL_CTX_use_certificate_file(ctx, CERTF, SSL_FILETYPE_PEM) <= 0) {
-    ERR_print_errors_fp(stderr);
-    exit(3);
-  }
-  if (SSL_CTX_use_PrivateKey_file(ctx, KEYF, SSL_FILETYPE_PEM) <= 0) {
-    ERR_print_errors_fp(stderr);
-    exit(4);
-  }
-
-  if (!SSL_CTX_check_private_key(ctx)) {
-    fprintf(stderr,"Private key does not match the certificate public key\n");
-    exit(5);
-  }
 
   /* ----------------------------------------------- */
   /* Create a socket and connect to server using normal socket calls. */
@@ -88,7 +71,8 @@ int main (int argc, char* argv[])
   memset(&sa, 0, sizeof(sa));
   
   sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
+  sa.sin_addr.s_addr = inet_addr (argv[1]);   /* Server IP */
+  // sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
   sa.sin_port        = htons     (1111);          /* Server Port number */
   
   err = connect(sd, (struct sockaddr*) &sa,
@@ -166,10 +150,10 @@ int main (int argc, char* argv[])
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
-  err = SSL_write (ssl, argv[1], strlen(argv[1]));  CHK_SSL(err);
+  err = SSL_write (ssl, argv[2], strlen(argv[2]));  CHK_SSL(err);
   
-  FILE *file_rcv = fopen(argv[1], "ab+");
-  file_rcv = fopen(argv[1], "w+");
+  FILE *file_rcv = fopen(argv[2], "ab+");
+  file_rcv = fopen(argv[2], "w+");
    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
   buf[err] = '\0';

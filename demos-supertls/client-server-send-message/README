@@ -1,0 +1,14 @@
+Simple client and server SuperTLS command-line applications
+
+Installation:
+- make clean;
+- make
+
+Run server:
+- ./server (runs on localhost on port 1111)
+
+Run client:
+- ./client <server-ip> <message-to-send>
+
+André Joaquim | 2016
+
