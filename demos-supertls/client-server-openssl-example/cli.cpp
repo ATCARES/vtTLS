@@ -148,8 +148,7 @@ int main (int argc, char* argv[])
   /* DATA EXCHANGE - Send a message and receive a reply. */
   err = SSL_write (ssl, argv[2], strlen(argv[2]));  CHK_SSL(err);
   
-  FILE *file_rcv = fopen(argv[2], "ab+");
-  file_rcv = fopen(argv[1], "w+");
+  FILE *file_rcv = fopen(argv[2], "w+");
    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
   buf[err] = '\0';
