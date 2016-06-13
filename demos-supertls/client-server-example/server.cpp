@@ -33,6 +33,8 @@
 #define ECDH2_CERTF    "server-dh-cert.crt"
 #define ECDH2_KEYF     "server-dh-key.pem"
 
+#define DIVERSITY_FACTOR 2
+
 #define MAX_MSG_SIZE 16250
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
@@ -83,16 +85,16 @@ int main (int argc, char* argv[])
     exit(5);
   }
 
-  if (SSL_CTX_use_n_certificate_file(2, ctx, ECDH_CERTF, SSL_FILETYPE_PEM) <= 0) {
+  if (SSL_CTX_use_n_certificate_file(DIVERSITY_FACTOR, ctx, ECDH_CERTF, SSL_FILETYPE_PEM) <= 0) {
     ERR_print_errors_fp(stderr);
     exit(3);
   }
-  if (SSL_CTX_use_n_PrivateKey_file(2, ctx, ECDH_KEYF, SSL_FILETYPE_PEM) <= 0) {
+  if (SSL_CTX_use_n_PrivateKey_file(DIVERSITY_FACTOR, ctx, ECDH_KEYF, SSL_FILETYPE_PEM) <= 0) {
     ERR_print_errors_fp(stderr);
     exit(4);
   }
 
-  if (!SSL_CTX_n_second_private_key(2, ctx)) {
+  if (!SSL_CTX_check_n_private_key(DIVERSITY_FACTOR, ctx)) {
     fprintf(stderr,"Second private key does not match the certificate public key\n");
     exit(5);
   }
@@ -132,7 +134,7 @@ int main (int argc, char* argv[])
   /* Get the cipher - opt */
   
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_n_cipher (2, ssl));
+  printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY_FACTOR, ssl));
   
   /* Get client's certificate (note: beware of dynamic allocation) - opt */
 
