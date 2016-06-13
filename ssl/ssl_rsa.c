@@ -80,7 +80,7 @@ int SSL_use_certificate(SSL *ssl, X509 *x)
     return (ssl_set_cert(ssl->cert, x));
 }
 
-int SSL_use_second_certificate(SSL *ssl, X509 *x)
+int SSL_use_n_certificate(short n, SSL *ssl, X509 *x)
 {
     if (x == NULL) {
         SSLerr(SSL_F_SSL_USE_CERTIFICATE, ERR_R_PASSED_NULL_PARAMETER);
@@ -139,7 +139,7 @@ int SSL_use_certificate_file(SSL *ssl, const char *file, int type)
 #endif
 
 #ifndef OPENSSL_NO_STDIO
-int SSL_use_second_certificate_file(SSL *ssl, const char *file, int type)
+int SSL_use_n_certificate_file(short n, SSL *ssl, const char *file, int type)
 {
     int j;
     BIO *in;
@@ -173,7 +173,7 @@ int SSL_use_second_certificate_file(SSL *ssl, const char *file, int type)
         goto end;
     }
 
-    ret = SSL_use_second_certificate(ssl, x);
+    ret = SSL_use_n_certificate(n, ssl, x);
  end:
     if (x != NULL)
         X509_free(x);
@@ -448,7 +448,7 @@ int SSL_CTX_use_certificate(SSL_CTX *ctx, X509 *x)
     return (ssl_set_cert(ctx->cert, x));
 }
 
-int SSL_CTX_use_second_certificate(SSL_CTX *ctx, X509 *x)
+int SSL_CTX_use_n_certificate(short n, SSL_CTX *ctx, X509 *x)
 {
     if (x == NULL) {
         SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE, ERR_R_PASSED_NULL_PARAMETER);
@@ -572,7 +572,7 @@ int SSL_CTX_use_certificate_file(SSL_CTX *ctx, const char *file, int type)
     return (ret);
 }
 
-int SSL_CTX_use_second_certificate_file(SSL_CTX *ctx, const char *file, int type)
+int SSL_CTX_use_n_certificate_file(short n, SSL_CTX *ctx, const char *file, int type)
 {
     int j;
     BIO *in;
@@ -606,12 +606,7 @@ int SSL_CTX_use_second_certificate_file(SSL_CTX *ctx, const char *file, int type
         goto end;
     }
 
-    ret = SSL_CTX_use_second_certificate(ctx, x);
-
-    /*if(ctx->cert_sec == NULL)
-    	printf("[AMJ-SUPERTLS] %s: cert_sec is null\n", __func__);
-    else
-    	printf("[AMJ-SUPERTLS] %s: cert_sec is not null\n", __func__);*/
+    ret = SSL_CTX_use_n_certificate(n, ctx, x);
 
  end:
     if (x != NULL)
@@ -743,7 +738,7 @@ int SSL_CTX_use_PrivateKey(SSL_CTX *ctx, EVP_PKEY *pkey)
     return (ssl_set_pkey(ctx->cert, pkey));
 }
 
-int SSL_CTX_use_second_PrivateKey(SSL_CTX *ctx, EVP_PKEY *pkey)
+int SSL_CTX_use_n_PrivateKey(short n, SSL_CTX *ctx, EVP_PKEY *pkey)
 {
     if (pkey == NULL) {
         SSLerr(SSL_F_SSL_CTX_USE_PRIVATEKEY, ERR_R_PASSED_NULL_PARAMETER);
@@ -797,7 +792,7 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx, const char *file, int type)
     return (ret);
 }
 
-int SSL_CTX_use_second_PrivateKey_file(SSL_CTX *ctx, const char *file, int type)
+int SSL_CTX_use_n_PrivateKey_file(short n, SSL_CTX *ctx, const char *file, int type)
 {
     int j, ret = 0;
     BIO *in;
@@ -829,7 +824,7 @@ int SSL_CTX_use_second_PrivateKey_file(SSL_CTX *ctx, const char *file, int type)
         SSLerr(SSL_F_SSL_CTX_USE_PRIVATEKEY_FILE, j);
         goto end;
     }
-    ret = SSL_CTX_use_second_PrivateKey(ctx, pkey);
+    ret = SSL_CTX_use_n_PrivateKey(n, ctx, pkey);
     EVP_PKEY_free(pkey);
  end:
     if (in != NULL)

@@ -901,7 +901,7 @@ X509 *SSL_get_peer_certificate(const SSL *s)
     return (r);
 }
 
-X509 *SSL_get_second_peer_certificate(const SSL *s)
+X509 *SSL_get_n_peer_certificate(short n, const SSL *s)
 {
     X509 *r;
 
@@ -986,7 +986,7 @@ int SSL_CTX_check_private_key(const SSL_CTX *ctx)
 }
 
 /* Fix this so it checks all the valid key/cert options */
-int SSL_CTX_check_second_private_key(const SSL_CTX *ctx)
+int SSL_CTX_check_n_private_key(short n, const SSL_CTX *ctx)
 {
     if ((ctx == NULL) ||
         (ctx->cert_sec == NULL) || (ctx->cert_sec->key->x509 == NULL)) {
@@ -3138,7 +3138,7 @@ const SSL_CIPHER *SSL_get_current_cipher(const SSL *s)
 }
 
 /* AMJ-SUPERTLS-IMPLEMENTATION: Getter for the secondary cipher */
-const SSL_CIPHER *SSL_get_current_sec_cipher(const SSL *s)
+const SSL_CIPHER *SSL_get_current_n_cipher(short n, const SSL *s)
 {
     if ((s->session != NULL) && (s->session->secondary_cipher != NULL))
         return (s->session->secondary_cipher);
