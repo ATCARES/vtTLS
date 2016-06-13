@@ -39,8 +39,8 @@ int main (int argc, char* argv[])
   timeval start, end;
 
 
-  if(argc != 3){
-    printf("Usage: ./client <server-ip> <file-to-download>\n");
+  if(argc != 4){
+    printf("Usage: ./client <server-ip> <server-port> <file-to-download>\n");
     exit(0);
   }
   
@@ -66,7 +66,7 @@ int main (int argc, char* argv[])
   sa.sin_family      = AF_INET;
   sa.sin_addr.s_addr = inet_addr (argv[1]);   /* Server IP */
   // sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
-  sa.sin_port        = htons     (1111);          /* Server Port number */
+  sa.sin_port        = htons     (atoi(argv[2]));          /* Server Port number */
   
   err = connect(sd, (struct sockaddr*) &sa,
 		sizeof(sa));                   CHK_ERR(err, "connect");
@@ -144,10 +144,10 @@ int main (int argc, char* argv[])
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
-  err = SSL_write (ssl, argv[2], strlen(argv[2]));  CHK_SSL(err);
+  err = SSL_write (ssl, argv[3], strlen(argv[3]));  CHK_SSL(err);
   
-  FILE *file_rcv = fopen(argv[2], "ab+");
-  file_rcv = fopen(argv[2], "w+");
+  FILE *file_rcv = fopen(argv[3], "ab+");
+  file_rcv = fopen(argv[3], "w+");
    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
   buf[err] = '\0';
@@ -159,23 +159,31 @@ int main (int argc, char* argv[])
   
   char *buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
   
-  err = 0;
-  int total_size = 0;
-  i = file_len;
+  int counter = 0;
   
-  gettimeofday(&start, NULL);
+  for (counter = 0; counter < 50; counter++){
+  /*************/
   
-  for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
-    err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
+    err = 0;
+    int total_size = 0;
+    i = file_len;
+    
+    gettimeofday(&start, NULL);
+    
+    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+        err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
+    }
+    
+    err += SSL_read (ssl, buffer+err, i);
+    
+    gettimeofday(&end, NULL);
+    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+    printf ("%llu\n", diff);
+    // printf ("The SuperTLS took %llu ms to read %s.\n", diff, argv[3]);
+    diff = 0;
+  
+  /*************/
   }
-  
-  err += SSL_read (ssl, buffer+err, i);
-  
-  gettimeofday(&end, NULL);
-  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf ("%llu\n", diff);
-  // printf ("The SuperTLS took %llu ms to read %s.\n", diff, argv[2]);
-  diff = 0;
 
   fprintf(file_rcv, "%s", buffer);
   

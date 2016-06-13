@@ -26,6 +26,7 @@
 #define HOME "./"
 
 #define MAX_MSG_SIZE 16250
+#define DIVERSITY 2
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
@@ -106,14 +107,14 @@ int main (int argc, char* argv[])
   /* Get the cipher - opt */
 
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_sec_cipher (ssl));
+  printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY, ssl));
 
   
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
 
   server_cert = SSL_get_peer_certificate (ssl);       			 CHK_NULL(server_cert);
   
-  server_sec_cert = SSL_get_second_peer_certificate (ssl);       CHK_NULL(server_sec_cert);
+  server_sec_cert = SSL_get_n_peer_certificate (DIVERSITY, ssl);       CHK_NULL(server_sec_cert);
   
   printf ("Server certificate:\n");
   
