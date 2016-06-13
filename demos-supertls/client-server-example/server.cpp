@@ -57,6 +57,10 @@ int main (int argc, char* argv[])
   SSL_METHOD const *meth;
   unsigned long long diff;
 
+  if(argc != 2){
+    printf("Usage: ./server <port>");
+    exit(1);
+  }  
   
   /* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -107,7 +111,7 @@ int main (int argc, char* argv[])
   memset(&sa_serv, 0, sizeof(sa_serv));
   sa_serv.sin_family      = AF_INET;
   sa_serv.sin_addr.s_addr = INADDR_ANY;
-  sa_serv.sin_port        = htons (1111);          /* Server Port number */
+  sa_serv.sin_port        = htons (atoi(argv[1]));          /* Server Port number */
   
   err = bind(listen_sd, (struct sockaddr*) &sa_serv,
 	     sizeof (sa_serv));                   CHK_ERR(err, "bind");
@@ -133,8 +137,8 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
   
-  printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY_FACTOR, ssl));
+  //printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
+  //printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY_FACTOR, ssl));
   
   /* Get client's certificate (note: beware of dynamic allocation) - opt */
 
@@ -184,24 +188,31 @@ int main (int argc, char* argv[])
   sprintf(filelen, "%d", file_len);
     
   err = SSL_write (ssl, filelen, strlen(filelen));
+ 
+  int counter = 0;
   
-  err = 0;
-  int i = file_len;
+  for (counter = 0; counter < 50; counter++){
+  /*********/
+    err = 0;
+    int i = file_len;
+    timeval start, end;
+    
+    gettimeofday(&start, NULL);
+    
+    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+      err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
+    }
+    
+    err += SSL_write (ssl, buffer+err, i);
 
-  timeval start, end;
-  gettimeofday(&start, NULL);
+    gettimeofday(&end, NULL);
+    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+    printf ("%llu\n", diff);
+    // printf ("The SuperTLS took %llu ms to send %s.\n", diff, buf);
+    diff = 0;
   
-  for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
-    err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
+ /*********/
   }
-  
-  err += SSL_write (ssl, buffer+err, i);
-
-  gettimeofday(&end, NULL);
-  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf ("%llu\n", diff);
-  // printf ("The SuperTLS took %llu ms to send %s.\n", diff, buf);
-  diff = 0;
   
   // printf("-- total_size: %d\n", err);
     
