@@ -83,16 +83,16 @@ int main (int argc, char* argv[])
     exit(5);
   }
 
-  if (SSL_CTX_use_second_certificate_file(ctx, ECDH_CERTF, SSL_FILETYPE_PEM) <= 0) {
+  if (SSL_CTX_use_n_certificate_file(2, ctx, ECDH_CERTF, SSL_FILETYPE_PEM) <= 0) {
     ERR_print_errors_fp(stderr);
     exit(3);
   }
-  if (SSL_CTX_use_second_PrivateKey_file(ctx, ECDH_KEYF, SSL_FILETYPE_PEM) <= 0) {
+  if (SSL_CTX_use_n_PrivateKey_file(2, ctx, ECDH_KEYF, SSL_FILETYPE_PEM) <= 0) {
     ERR_print_errors_fp(stderr);
     exit(4);
   }
 
-  if (!SSL_CTX_check_second_private_key(ctx)) {
+  if (!SSL_CTX_n_second_private_key(2, ctx)) {
     fprintf(stderr,"Second private key does not match the certificate public key\n");
     exit(5);
   }
@@ -131,8 +131,8 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
   
-  /* printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_sec_cipher (ssl));*/ 
+  printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
+  printf ("SSL connection using %s\n", SSL_get_n_cipher (2, ssl));
   
   /* Get client's certificate (note: beware of dynamic allocation) - opt */
 

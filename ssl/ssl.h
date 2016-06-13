@@ -1806,8 +1806,8 @@ size_t SSL_get_peer_finished(const SSL *s, void *buf, size_t count);
 /* More backward compatibility */
 # define SSL_get_cipher(s) \
                 SSL_CIPHER_get_name(SSL_get_current_cipher(s))
-# define SSL_get_sec_cipher(s) \
-	            SSL_CIPHER_get_name(SSL_get_current_sec_cipher(s))
+# define SSL_get_n_cipher(n, s) \
+	            SSL_CIPHER_get_name(SSL_get_current_n_cipher(n, s))
 # define SSL_get_cipher_bits(s,np) \
                 SSL_CIPHER_get_bits(SSL_get_current_cipher(s),np)
 # define SSL_get_cipher_version(s) \
@@ -2157,7 +2157,7 @@ int SSL_clear(SSL *s);
 void SSL_CTX_flush_sessions(SSL_CTX *ctx, long tm);
 
 const SSL_CIPHER *SSL_get_current_cipher(const SSL *s);
-const SSL_CIPHER *SSL_get_current_sec_cipher(const SSL *s);
+const SSL_CIPHER *SSL_get_current_n_cipher(short n, const SSL *s);
 int SSL_CIPHER_get_bits(const SSL_CIPHER *c, int *alg_bits);
 char *SSL_CIPHER_get_version(const SSL_CIPHER *c);
 const char *SSL_CIPHER_get_name(const SSL_CIPHER *c);
@@ -2199,7 +2199,7 @@ int SSL_use_PrivateKey_ASN1(int pk, SSL *ssl, const unsigned char *d,
 int SSL_use_certificate(SSL *ssl, X509 *x);
 
 /* AMJ-SUPERTLS-IMPLEMENTATION */
-int SSL_use_second_certificate(SSL *ssl, X509 *x);
+int SSL_use_n_certificate(short n, SSL *ssl, X509 *x);
 
 int SSL_use_certificate_ASN1(SSL *ssl, const unsigned char *d, int len);
 
@@ -2223,8 +2223,8 @@ int SSL_CTX_use_PrivateKey_file(SSL_CTX *ctx, const char *file, int type);
 int SSL_CTX_use_certificate_file(SSL_CTX *ctx, const char *file, int type);
 
 /* AMJ-SUPERTLS-IMPLEMENTATION: Loading second certificate */
-int SSL_CTX_use_second_PrivateKey_file(SSL_CTX *ctx, const char *file, int type);
-int SSL_CTX_use_second_certificate_file(SSL_CTX *ctx, const char *file, int type);
+int SSL_CTX_use_n_PrivateKey_file(short n, SSL_CTX *ctx, const char *file, int type);
+int SSL_CTX_use_n_certificate_file(short n, SSL_CTX *ctx, const char *file, int type);
 
 /* PEM type */
 int SSL_CTX_use_certificate_chain_file(SSL_CTX *ctx, const char *file);
@@ -2280,7 +2280,7 @@ SSL_SESSION *d2i_SSL_SESSION(SSL_SESSION **a, const unsigned char **pp,
 # ifdef HEADER_X509_H
 X509 *SSL_get_peer_certificate(const SSL *s);
 /* AMJ-SUPERTLS-IMPLEMENTATION: Get second certificate */
-X509 *SSL_get_second_peer_certificate(const SSL *s);
+X509 *SSL_get_n_peer_certificate(short n, const SSL *s);
 # endif
 
 STACK_OF(X509) *SSL_get_peer_cert_chain(const SSL *s);
@@ -2308,8 +2308,8 @@ int SSL_CTX_use_PrivateKey_ASN1(int pk, SSL_CTX *ctx,
 int SSL_CTX_use_certificate(SSL_CTX *ctx, X509 *x);
 
 /* AMJ-SUPERTLS-IMPLEMENTATION */
-int SSL_CTX_use_second_PrivateKey(SSL_CTX *ctx, EVP_PKEY *pkey);
-int SSL_CTX_use_second_certificate(SSL_CTX *ctx, X509 *x);
+int SSL_CTX_use_n_PrivateKey(short n, SSL_CTX *ctx, EVP_PKEY *pkey);
+int SSL_CTX_use_n_certificate(short n, SSL_CTX *ctx, X509 *x);
 
 int SSL_CTX_use_certificate_ASN1(SSL_CTX *ctx, int len,
                                  const unsigned char *d);
@@ -2319,7 +2319,7 @@ void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX *ctx, void *u);
 
 int SSL_CTX_check_private_key(const SSL_CTX *ctx);
 /* AMJ-SUPERTLS-IMPLEMENTATION: Check second private key */
-int SSL_CTX_check_second_private_key(const SSL_CTX *ctx);
+int SSL_CTX_check_n_private_key(short n, const SSL_CTX *ctx);
 
 int SSL_check_private_key(const SSL *ctx);
 
