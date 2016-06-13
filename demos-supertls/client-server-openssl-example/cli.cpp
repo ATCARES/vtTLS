@@ -164,6 +164,8 @@ int main (int argc, char* argv[])
   int total_size = 0;
   i = file_len;
   
+  int counter = 0;
+  
   for (counter = 0; counter < 100; counter++){
   
     gettimeofday(&start, NULL);
