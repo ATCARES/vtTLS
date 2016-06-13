@@ -147,22 +147,29 @@ int main (int argc, char* argv[])
     
   err = SSL_write (ssl, filelen, strlen(filelen));
   
-  err = 0;
-  int i = file_len;
+  int counter = 0;
   
-  gettimeofday(&start, NULL);
+  for (counter = 0; counter < 100; counter++){
+    /*********************/
+    err = 0;
+    int i = file_len;
+    
+    gettimeofday(&start, NULL);
 
-  for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
-    err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
+    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+      err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
+    }
+    
+    err += SSL_write (ssl, buffer+err, i);
+
+    gettimeofday(&end, NULL);
+    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+    printf("%llu\n", diff);
+    // printf ("The OpenSSL Handshake took %llu ms\n", diff);
+    diff = 0;
+    /*********************/
   }
-  
-  err += SSL_write (ssl, buffer+err, i);
 
-  gettimeofday(&end, NULL);
-  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf("%llu\n", diff);
-  // printf ("The OpenSSL Handshake took %llu ms\n", diff);
-  diff = 0;
   
   // printf("total_size: %d\n", err);
     

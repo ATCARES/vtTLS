@@ -164,19 +164,23 @@ int main (int argc, char* argv[])
   int total_size = 0;
   i = file_len;
   
-  gettimeofday(&start, NULL);
+  for (counter = 0; counter < 100; counter++){
   
-  for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
-    err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
+    gettimeofday(&start, NULL);
+    
+    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+      err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
+    }
+    
+    gettimeofday(&end, NULL);
+    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+    printf ("%llu\n", diff);
+    //printf ("The OpenSSL Handshake took %llu ms\n", diff);
+    diff = 0;
+    
+    err += SSL_read (ssl, buffer+err, i);
+    
   }
-  
-  gettimeofday(&end, NULL);
-  diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf ("%llu\n", diff);
-  //printf ("The OpenSSL Handshake took %llu ms\n", diff);
-  diff = 0;
-  
-  err += SSL_read (ssl, buffer+err, i);
 
   fprintf(file_rcv, "%s", buffer);
   
