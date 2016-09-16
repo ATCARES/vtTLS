@@ -58,7 +58,7 @@ int main (int argc, char* argv[])
   unsigned long long diff;
 
   if(argc != 2){
-    printf("Usage: ./server <port>");
+    printf("Usage: ./server <port>\n");
     exit(1);
   }  
   
@@ -189,9 +189,9 @@ int main (int argc, char* argv[])
     
   err = SSL_write (ssl, filelen, strlen(filelen));
  
-  int counter = 0;
+  /*int counter = 0;
   
-  for (counter = 0; counter < 50; counter++){
+  for (counter = 0; counter < 50; counter++){*/
   /*********/
     err = 0;
     int i = file_len;
@@ -212,7 +212,7 @@ int main (int argc, char* argv[])
     diff = 0;
   
  /*********/
-  }
+  //}
   
   // printf("-- total_size: %d\n", err);
     

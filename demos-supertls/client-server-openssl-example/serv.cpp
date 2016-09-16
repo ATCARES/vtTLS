@@ -149,7 +149,7 @@ int main (int argc, char* argv[])
   
   int counter = 0;
   
-  for (counter = 0; counter < 100; counter++){
+  //for (counter = 0; counter < 100; counter++){
     /*********************/
     err = 0;
     int i = file_len;
@@ -168,7 +168,7 @@ int main (int argc, char* argv[])
     // printf ("The OpenSSL Handshake took %llu ms\n", diff);
     diff = 0;
     /*********************/
-  }
+  //}
 
   
   // printf("total_size: %d\n", err);
