@@ -18,12 +18,12 @@
 #include <netdb.h>
 #include <sys/time.h>
 
-#include <supertls/rsa.h>
-#include <supertls/crypto.h>
-#include <supertls/x509.h>
-#include <supertls/pem.h>
-#include <supertls/ssl.h>
-#include <supertls/err.h>
+#include <vttls/rsa.h>
+#include <vttls/crypto.h>
+#include <vttls/x509.h>
+#include <vttls/pem.h>
+#include <vttls/ssl.h>
+#include <vttls/err.h>
 
 #include <string>
 
