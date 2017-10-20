@@ -1,4 +1,4 @@
-Simple client and server SuperTLS command-line applications
+Simple client and server vtTLS command-line applications
 
 Installation:
 - make clean;
@@ -15,5 +15,4 @@ Available files:
 Run client:
 - ./client <ip> <port> <file-to-download>
 
-André Joaquim | 2016
-
+Andre' Joaquim | 2016

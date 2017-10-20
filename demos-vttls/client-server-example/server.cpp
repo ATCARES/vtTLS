@@ -208,7 +208,7 @@ int main (int argc, char* argv[])
     gettimeofday(&end, NULL);
     diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
     printf ("%llu\n", diff);
-    // printf ("The SuperTLS took %llu ms to send %s.\n", diff, buf);
+    // printf ("The vtTLS took %llu ms to send %s.\n", diff, buf);
     diff = 0;
   
  /*********/

@@ -90,7 +90,7 @@ int main (int argc, char* argv[])
   
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  // printf ("The SuperTLS Handshake took %llu ms\n", diff);
+  // printf ("The vtTLS Handshake took %llu ms\n", diff);
   diff = 0;
   
   /* ssl->method->ssl_connect(s)*/
@@ -179,7 +179,7 @@ int main (int argc, char* argv[])
     gettimeofday(&end, NULL);
     diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
     printf ("%llu\n", diff);
-    // printf ("The SuperTLS took %llu ms to read %s.\n", diff, argv[3]);
+    // printf ("The vtTLS took %llu ms to read %s.\n", diff, argv[3]);
     diff = 0;
   
   /*************/

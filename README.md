@@ -1,3 +1,3 @@
-SUPERTLS
+VTTLS
 
 A Diverse and Redundant Vulnerability-Tolerant Communication Channel for Cloud Security
