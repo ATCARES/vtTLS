@@ -66,20 +66,20 @@ int main (int argc, char* argv[])
   char*     str;
   char      buf [4096];
   SSL_METHOD const *meth;
-  
+
   /* SSL preliminaries. We keep the certificate and key with the context. */
 
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms();
   meth = TLSv1_2_method();
-  
+
   ctx = SSL_CTX_new (meth);
-  
+
   if (!ctx) {
     ERR_print_errors_fp(stderr);
     exit(2);
   }
-  
+
   if (SSL_CTX_use_certificate_file(ctx, ECDH_CERTF, SSL_FILETYPE_PEM) <= 0) {
     ERR_print_errors_fp(stderr);
     exit(3);
@@ -112,12 +112,12 @@ int main (int argc, char* argv[])
   /* Prepare TCP socket for receiving connections */
 
   listen_sd = socket (AF_INET, SOCK_STREAM, 0);   CHK_ERR(listen_sd, "socket");
-  
+
   memset(&sa_serv, 0, sizeof(sa_serv));
   sa_serv.sin_family      = AF_INET;
   sa_serv.sin_addr.s_addr = INADDR_ANY;
   sa_serv.sin_port        = htons (PORT);          /* Server Port number */
-  
+
   err = bind(listen_sd, (struct sockaddr*) &sa_serv,
 	     sizeof (sa_serv));                   CHK_ERR(err, "bind");
 
@@ -125,9 +125,9 @@ int main (int argc, char* argv[])
 		  ntohs(sa_serv.sin_port));
 
   /* Receive a TCP connection. */
-	     
+
   err = listen (listen_sd, 5);                    CHK_ERR(err, "listen");
-  
+
   client_len = sizeof(sa_cli);
   sd = accept (listen_sd, (struct sockaddr*) &sa_cli, &client_len);
   CHK_ERR(sd, "accept");
@@ -147,27 +147,27 @@ int main (int argc, char* argv[])
   ssl = SSL_new (ctx);                           CHK_NULL(ssl);     /* CHECKED */
   SSL_set_fd (ssl, sd);
   err = SSL_accept (ssl);                        CHK_SSL(err);      /* CHECKED */
-  
+
   /* Get the cipher - opt */
-  
+
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
   printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY_FACTOR, ssl));
-  
+
 
   /* DATA EXCHANGE - Receive message and send reply. */
-    
+
   err = SSL_read (ssl, buf, sizeof(buf) - 1);                   CHK_SSL(err);
   buf[err] = '\0';
   printf ("Got %d chars:'%s'\n", err, buf);
-  
+
   printf("total_size: %d\n", err);
-    
-  /* Clean up. */  
+
+  /* Clean up. */
   close (sd);
   SSL_free (ssl);
   SSL_CTX_free (ctx);
-  
+
   return 0;
-  
+
 }
 /* EOF - serv.cpp */

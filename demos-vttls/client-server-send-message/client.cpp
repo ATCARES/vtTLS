@@ -51,13 +51,13 @@ int main (int argc, char* argv[])
     printf("Usage: ./client <server-ip> <message-to-send>\n");
     exit(0);
   }
-  
+
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms(); /* SSL_library_init() */
   meth = TLSv1_2_client_method();
-  
+
   ctx = SSL_CTX_new (meth);
-  
+
   if (!ctx) {
     ERR_print_errors_fp(stderr);
     exit(2);
@@ -65,59 +65,59 @@ int main (int argc, char* argv[])
 
   /* ----------------------------------------------- */
   /* Create a socket and connect to server using normal socket calls. */
-  
+
   sd = socket (AF_INET, SOCK_STREAM, 0);       CHK_ERR(sd, "socket");
- 
+
   memset(&sa, 0, sizeof(sa));
-  
+
   sa.sin_family      = AF_INET;
   sa.sin_addr.s_addr = inet_addr (argv[1]);   /* Server IP */
   sa.sin_port        = htons     (1111);          /* Server Port number */
-  
+
   err = connect(sd, (struct sockaddr*) &sa,
 		sizeof(sa));                   CHK_ERR(err, "connect");
 
   /* ----------------------------------------------- */
-  /* Now we have TCP conncetion. Start SSL negotiation. */
-  
+  /* Now we have TCP connection. Start SSL negotiation. */
+
   ssl = SSL_new (ctx);                         CHK_NULL(ssl);
-  
+
   SSL_set_fd (ssl, sd);
   /* Sets the file descriptor fd as the input/output
    * facility for the TLS encypted side
    * of argument "ssl"; fd is usually the socket descriptor */
-  
+
   unsigned long long diff;
   int i = 0;
-  
+
   gettimeofday(&start, NULL);
-  
+
   err = SSL_connect (ssl);                     CHK_SSL(err);
-  
+
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
   printf ("The SuperTLS Handshake took %llu ms\n", diff);
   diff = 0;
-  
+
   /* ssl->method->ssl_connect(s)*/
-    
+
   /* Following two steps are optional and not required for
      data exchange to be successful. */
-  
+
   /* Get the cipher - opt */
 
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
   printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY, ssl));
 
-  
+
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
 
   server_cert = SSL_get_peer_certificate (ssl);       			 CHK_NULL(server_cert);
-  
+
   server_sec_cert = SSL_get_n_peer_certificate (DIVERSITY, ssl);       CHK_NULL(server_sec_cert);
-  
+
   printf ("Server certificate:\n");
-  
+
   str = X509_NAME_oneline (X509_get_subject_name (server_cert),0,0);
   CHK_NULL(str);
   printf ("\t subject: %s\n", str);
@@ -145,22 +145,22 @@ int main (int argc, char* argv[])
 
   X509_free (server_cert);
   X509_free (server_sec_cert);
-  
+
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
   err = SSL_write (ssl, argv[2], strlen(argv[2]));  CHK_SSL(err);
-  
+
   printf("-- total_size: %d\n", err);
-  
+
   SSL_shutdown (ssl);  /* send SSL/TLS close_notify */
 
   /* Clean up. */
   close (sd);
   SSL_free (ssl);
   SSL_CTX_free (ctx);
-  
+
   return 0;
-  
+
 }
 /* EOF - cli.cpp */
