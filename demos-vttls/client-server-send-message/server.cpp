@@ -127,9 +127,20 @@ int main (int argc, char* argv[])
   CHK_ERR(sd, "accept");
   close (listen_sd);
 
-  printf ("Connection from %lx, port %x\n",
-	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);
-  
+//MP: following lines produced compiler warning
+//  printf ("Connection from %lx, port %x\n",
+//	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);
+//
+//MP: replaced with the following (
+//MP: credits: https://stackoverflow.com/a/26394214/129497
+  int len=20;
+  char addr_buf[len];
+  // convert IP address to string
+  inet_ntop(AF_INET, &(sa_cli.sin_addr.s_addr), addr_buf, len);
+  // print IP string and decimal port
+  printf ("Connection from %s, port %d\n",
+		  addr_buf, sa_cli.sin_port);
+
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */
 
