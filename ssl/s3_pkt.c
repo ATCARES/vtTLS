@@ -464,7 +464,7 @@ static int ssl3_get_record(SSL *s)
 		mac_size_sec = EVP_MD_CTX_size(s->read_hash_sec);
 		OPENSSL_assert(mac_size_sec <= EVP_MAX_MD_SIZE);
 
-	    // printf("[AMJ-SUPERTLS] %s: mac_size_sec=%d\n", __func__, mac_size_sec);
+	    // printf("[VTTLS] %s: mac_size_sec=%d\n", __func__, mac_size_sec);
 
         orig_len_sec = rr->length + ((unsigned int)rr->type >> 8);
 
@@ -601,7 +601,7 @@ static int ssl3_get_record(SSL *s)
         }
     }
 
-    // printf("[AMJ-SUPERTLS] %s: rr->length = %d\n", __func__, rr->length);
+    // printf("[VTTLS] %s: rr->length = %d\n", __func__, rr->length);
 
     if (rr->length > SSL3_RT_MAX_PLAIN_LENGTH + extra) {
         al = SSL_AD_RECORD_OVERFLOW;
@@ -967,7 +967,7 @@ static int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
             goto err;
     }
 
-    /* AMJ-SUPERTLS: Find the mac_size of the second cipher suite */
+    /* VTTLS: Find the mac_size of the second cipher suite */
 
     if ((sess == NULL) ||
         (s->sec_enc_write_ctx == NULL) ||
@@ -1135,12 +1135,12 @@ static int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
         wr->length += eivlen;
     }
 
-    /************* printf("[AMJ-SUPERTLS] %s: Encrypting...\n", __func__);************/
+    /************* printf("[VTTLS] %s: Encrypting...\n", __func__);************/
 
     if (s->method->ssl3_enc->enc(s, 1) < 1)
         goto err;
 
-    /************* printf("[AMJ-SUPERTLS] %s: Finished encryption!\n", __func__); ************/
+    /************* printf("[VTTLS] %s: Finished encryption!\n", __func__); ************/
 
     /* ------------------------------------- SECOND ENC ---------------------------------------------- */
 
@@ -1642,7 +1642,7 @@ int ssl3_read_bytes(SSL *s, int type, unsigned char *buf, int len, int peek)
             goto f_err;
         }
 
-        /* AMJ-SUPERTLS: Check we have a cipher to change to */
+        /* VTTLS: Check we have a cipher to change to */
         if (s->s3->tmp.new_cipher_sec == NULL) {
             al = SSL_AD_UNEXPECTED_MESSAGE;
             SSLerr(SSL_F_SSL3_READ_BYTES, SSL_R_CCS_RECEIVED_EARLY);
@@ -1795,7 +1795,7 @@ int ssl3_do_change_cipher_spec(SSL *s)
         }
 
         s->session->cipher = s->s3->tmp.new_cipher;
-        /* AMJ-SUPERTLS-IMPLEMENTATION: Have I found the missing declaration? */
+        /* VTTLS-IMPLEMENTATION: Have I found the missing declaration? */
         s->session->secondary_cipher = s->s3->tmp.new_cipher_sec;
         if (!s->method->ssl3_enc->setup_key_block(s))
             return (0);

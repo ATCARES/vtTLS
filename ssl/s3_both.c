@@ -421,7 +421,7 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
         /* s->init_num == 4 */
 
         if ((mt >= 0) && (*p != mt)) {
-        	printf("[AMJ-SUPERTLS] %s: ERROR: mt = %d; *p = %u\n", __func__, mt, *p);
+        	printf("[VTTLS] %s: ERROR: mt = %d; *p = %u\n", __func__, mt, *p);
             al = SSL_AD_UNEXPECTED_MESSAGE;
             SSLerr(SSL_F_SSL3_GET_MESSAGE, SSL_R_UNEXPECTED_MESSAGE);
             goto f_err;

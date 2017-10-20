@@ -410,7 +410,7 @@ SSL *SSL_new(SSL_CTX *ctx)
 
     s->verify_result = X509_V_OK;
 
-    s->method = ctx->method; /* AMJ-SUPERTLS : s->method called in SSL_accept and SSL_connect corresponds to this assignment*/
+    s->method = ctx->method; /* VTTLS : s->method called in SSL_accept and SSL_connect corresponds to this assignment*/
 
     if (!s->method->ssl_new(s))
         goto err;
@@ -2175,7 +2175,7 @@ void SSL_CTX_free(SSL_CTX *a)
         sk_SSL_CIPHER_free(a->cipher_list_by_id);
     if (a->cert != NULL)
         ssl_cert_free(a->cert);
-    /* AMJ-SUPERTLS: free the second certificate */
+    /* VTTLS: free the second certificate */
     if (a->cert_sec != NULL)
         ssl_cert_free(a->cert_sec);
     if (a->client_CA != NULL)
@@ -3137,7 +3137,7 @@ const SSL_CIPHER *SSL_get_current_cipher(const SSL *s)
     return (NULL);
 }
 
-/* AMJ-SUPERTLS-IMPLEMENTATION: Getter for the secondary cipher */
+/* VTTLS-IMPLEMENTATION: Getter for the secondary cipher */
 const SSL_CIPHER *SSL_get_current_n_cipher(short n, const SSL *s)
 {
     if ((s->session != NULL) && (s->session->secondary_cipher != NULL))

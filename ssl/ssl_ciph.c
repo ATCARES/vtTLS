@@ -674,7 +674,7 @@ int ssl_cipher_get_evp(const SSL_SESSION *s, const EVP_CIPHER **enc,
         return (0);
 }
 
-/* AMJ-SUPERTLS-IMPLEMENTATION */
+/* VTTLS-IMPLEMENTATION */
 int ssl_secondary_cipher_get_evp(const SSL_SESSION *s, const EVP_CIPHER **enc,
                        const EVP_MD **md, int *mac_pkey_type,
                        int *mac_secret_size, SSL_COMP **comp)

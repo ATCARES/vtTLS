@@ -573,7 +573,7 @@ typedef struct ssl3_state_st {
         int message_type;
         /* used to hold the new cipher we are going to use */
         const SSL_CIPHER *new_cipher;
-        /* AMJ-SUPERTLS-IMPLEMENTATION: Used to hold the second cipher we are going to use */
+        /* VTTLS-IMPLEMENTATION: Used to hold the second cipher we are going to use */
         const SSL_CIPHER *new_cipher_sec;
 #  ifndef OPENSSL_NO_DH
         DH *dh;
@@ -581,7 +581,7 @@ typedef struct ssl3_state_st {
 #  endif
 #  ifndef OPENSSL_NO_ECDH
         EC_KEY *ecdh;           /* holds short lived ECDH key */
-        EC_KEY *ecdh_sec;		/* AMJ-SUPERTLS: holds sec short lived ECDH key */
+        EC_KEY *ecdh_sec;		/* VTTLS: holds sec short lived ECDH key */
 #  endif
         /* used when SSL_ST_FLUSH_DATA is entered */
         int next_state;
@@ -596,15 +596,15 @@ typedef struct ssl3_state_st {
         int key_block_length;
         int key_block_length_sec;
         unsigned char *key_block;
-        unsigned char *key_block_sec; /* AMJ-SUPERTLS: 2->k*/
+        unsigned char *key_block_sec; /* VTTLS: 2->k*/
         const EVP_CIPHER *new_sym_enc;
-        const EVP_CIPHER *new_sec_sym_enc; /* AMJ-SUPERTLS: 2->k*/
+        const EVP_CIPHER *new_sec_sym_enc; /* VTTLS: 2->k*/
         const EVP_MD *new_hash;
-        const EVP_MD *new_hash_sec; /* AMJ-SUPERTLS: 2->k*/
+        const EVP_MD *new_hash_sec; /* VTTLS: 2->k*/
         int new_mac_pkey_type;
-        int new_mac_pkey_type_sec; /* AMJ-SUPERTLS: 2->k*/
+        int new_mac_pkey_type_sec; /* VTTLS: 2->k*/
         int new_mac_secret_size;
-        int new_mac_secret_size_sec; /* AMJ-SUPERTLS: 2->k*/
+        int new_mac_secret_size_sec; /* VTTLS: 2->k*/
 
 #  ifndef OPENSSL_NO_COMP
         const SSL_COMP *new_compression;

@@ -1100,7 +1100,7 @@ void ssl_cert_set_cert_cb(CERT *c, int (*cb) (SSL *ssl, void *arg),
 
 int ssl_verify_cert_chain(SSL *s, STACK_OF(X509) *sk);
 int ssl_add_cert_chain(SSL *s, CERT_PKEY *cpk, unsigned long *l);
-/* AMJ-SUPERTLS-IMPLEMENTATION */
+/* VTTLS-IMPLEMENTATION */
 int ssl_add_certs_chain(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec, unsigned long *l);
 int ssl_build_cert_chain(CERT *c, X509_STORE *chain_store, int flags);
 int ssl_cert_set_cert_store(CERT *c, X509_STORE *store, int chain, int ref);
@@ -1108,7 +1108,7 @@ int ssl_undefined_function(SSL *s);
 int ssl_undefined_void_function(void);
 int ssl_undefined_const_function(const SSL *s);
 CERT_PKEY *ssl_get_server_send_pkey(const SSL *s);
-/* AMJ-SUPERTLS: GET SECOND CERTPKEY */
+/* VTTLS: GET SECOND CERTPKEY */
 CERT_PKEY *ssl_get_server_send_pkey_sec(const SSL *s);
 #  ifndef OPENSSL_NO_TLSEXT
 int ssl_get_server_cert_serverinfo(SSL *s, const unsigned char **serverinfo,
@@ -1187,7 +1187,7 @@ int n_ssl3_mac(SSL *ssl, unsigned char *md, int send_data);
 int n_ssl3_sec_mac(SSL *ssl, unsigned char *md, int send_data);
 void ssl3_free_digest_list(SSL *s);
 unsigned long ssl3_output_cert_chain(SSL *s, CERT_PKEY *cpk);
-/* AMJ-SUPERTLS-IMPLEMENTATION */
+/* VTTLS-IMPLEMENTATION */
 unsigned long ssl3_output_certs_chains(SSL *s, CERT_PKEY *cpk, CERT_PKEY *cpk_sec);
 SSL_CIPHER *ssl3_choose_cipher(SSL *ssl, STACK_OF(SSL_CIPHER) *clnt,
                                STACK_OF(SSL_CIPHER) *srvr);

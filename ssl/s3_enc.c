@@ -231,7 +231,7 @@ int ssl3_change_cipher_state(SSL *s, int which)
 
     is_exp = SSL_C_IS_EXPORT(s->s3->tmp.new_cipher);
     c = s->s3->tmp.new_sym_enc;
-    /* TODO: AMJ-SUPERTLS
+    /* TODO: VTTLS
      c_sec = s->s3->tmp.new_sec_sym_enc;
      */
     m = s->s3->tmp.new_hash;
@@ -526,7 +526,7 @@ void ssl3_cleanup_key_block(SSL *s)
 int ssl3_enc(SSL *s, int send)
 {
 
-	printf("[AMJ-SUPERTLS] %s: Using ssl3_enc funtion\n", __func__);
+	printf("[VTTLS] %s: Using ssl3_enc funtion\n", __func__);
 
     SSL3_RECORD *rec;
     EVP_CIPHER_CTX *ds;

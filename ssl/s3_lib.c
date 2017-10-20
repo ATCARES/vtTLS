@@ -4031,7 +4031,7 @@ int ssl3_put_cipher_by_char(const SSL_CIPHER *c, unsigned char *p)
     return (2);
 }
 
-/* AMJ-SUPERTLS -- ssl3_choose_sec_cipher
+/* VTTLS -- ssl3_choose_sec_cipher
  *
  * This function is, as it is, extremely inneficient
  *
@@ -4188,17 +4188,17 @@ SSL_CIPHER *ssl3_choose_sec_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 			 *
 			 */
 
-			/* AMJ-SUPERTLS-IMPLEMENTATION: Delete the cipher chosen from the list */
+			/* VTTLS-IMPLEMENTATION: Delete the cipher chosen from the list */
 			deleted = sk_SSL_CIPHER_delete(allow, ii);
 
 			/*if(deleted != NULL)
-				printf("[AMJ-SUPERTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
-			printf("[AMJ-SUPERTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
-			printf("[AMJ-SUPERTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
-			printf("[AMJ-SUPERTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
-			printf("[AMJ-SUPERTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
-			printf("[AMJ-SUPERTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
-			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);*/
+				printf("[VTTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
+			printf("[VTTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
+			printf("[VTTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
+			printf("[VTTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
+			printf("[VTTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
+			printf("[VTTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
+			printf("[VTTLS] --- strength_bits  = %d\n", ret->strength_bits);*/
 			/* ----------------------------------------- */
 
 			break;
@@ -4344,16 +4344,16 @@ SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 #endif
             ret = sk_SSL_CIPHER_value(allow, ii);
 
-            /* AMJ-SUPERTLS-IMPLEMENTATION: Delete the cipher chosen from the list */
+            /* VTTLS-IMPLEMENTATION: Delete the cipher chosen from the list */
             deleted = sk_SSL_CIPHER_delete(allow, ii);
             /*if(deleted != NULL)
-            	printf("[AMJ-SUPERTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
-            printf("[AMJ-SUPERTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
-			printf("[AMJ-SUPERTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
-			printf("[AMJ-SUPERTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
-			printf("[AMJ-SUPERTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
-			printf("[AMJ-SUPERTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
-			printf("[AMJ-SUPERTLS] --- strength_bits  = %d\n", ret->strength_bits);*/
+            	printf("[VTTLS] %s: Deleted cipher -- %s\n", __func__, deleted->name);
+            printf("[VTTLS] %s: Cipher chosen -- %s\n", __func__, ret->name);
+			printf("[VTTLS] --- algorithm_auth = %lu\n", ret->algorithm_auth);
+			printf("[VTTLS] --- algorithm_enc  = %lu\n", ret->algorithm_enc);
+			printf("[VTTLS] --- algorithm_mac  = %lu\n", ret->algorithm_mac);
+			printf("[VTTLS] --- algorithm_mkey = %lu\n", ret->algorithm_mkey);
+			printf("[VTTLS] --- strength_bits  = %d\n", ret->strength_bits);*/
             /* ----------------------------------------- */
 
             break;

@@ -702,7 +702,7 @@ void ERR_free_strings(void)
 
 void ERR_put_error(int lib, int func, int reason, const char *file, int line)
 {
-	printf("[AMJ-SUPERTLS] %s\n", __func__);
+	printf("[VTTLS] %s\n", __func__);
 
     ERR_STATE *es;
 
