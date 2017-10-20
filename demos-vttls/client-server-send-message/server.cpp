@@ -31,6 +31,9 @@
 #define HOME "./"
 /* Make these what you want for cert & key files */
 
+/* define default port */
+#define PORT 1111
+
 /*ECDHE-ECDSA*/
 #define ECDH_CERTF  "server-ecdhe-cert.crt"
 #define ECDH_KEYF   "server-ecdhe-key.pem"
@@ -113,11 +116,14 @@ int main (int argc, char* argv[])
   memset(&sa_serv, 0, sizeof(sa_serv));
   sa_serv.sin_family      = AF_INET;
   sa_serv.sin_addr.s_addr = INADDR_ANY;
-  sa_serv.sin_port        = htons (1111);          /* Server Port number */
+  sa_serv.sin_port        = htons (PORT);          /* Server Port number */
   
   err = bind(listen_sd, (struct sockaddr*) &sa_serv,
 	     sizeof (sa_serv));                   CHK_ERR(err, "bind");
-	     
+
+  printf ("Server listening on port %d\n",
+		  ntohs(sa_serv.sin_port));
+
   /* Receive a TCP connection. */
 	     
   err = listen (listen_sd, 5);                    CHK_ERR(err, "listen");
@@ -127,19 +133,13 @@ int main (int argc, char* argv[])
   CHK_ERR(sd, "accept");
   close (listen_sd);
 
-//MP: following lines produced compiler warning
-//  printf ("Connection from %lx, port %x\n",
-//	  sa_cli.sin_addr.s_addr, sa_cli.sin_port);
-//
-//MP: replaced with the following (
-//MP: credits: https://stackoverflow.com/a/26394214/129497
-  int len=20;
-  char addr_buf[len];
   // convert IP address to string
-  inet_ntop(AF_INET, &(sa_cli.sin_addr.s_addr), addr_buf, len);
-  // print IP string and decimal port
+  char addr_buf[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &(sa_cli.sin_addr.s_addr), addr_buf, INET_ADDRSTRLEN);
+  // print IP and port
   printf ("Connection from %s, port %d\n",
-		  addr_buf, sa_cli.sin_port);
+		  addr_buf, ntohs(sa_cli.sin_port));
+
 
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */
