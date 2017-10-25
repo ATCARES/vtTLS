@@ -98,7 +98,7 @@ int main (int argc, char* argv[])
     exit(-1);
   }
   ip = argv[1];
-  port = 1111;
+  port = 2000;
 
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms(); /* SSL_library_init() */
@@ -133,6 +133,10 @@ int main (int argc, char* argv[])
       printf("Failed to create sknock handle\n");
       exit(1);
     }
+    printf("Knock packet sent!\n");
+
+    sleep(1);
+
     err = connect (sd, (struct sockaddr*) &sa,
                    sizeof(sa));
     CHK_ERR(err, "connect");
