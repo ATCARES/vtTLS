@@ -5,6 +5,9 @@
    Simplified to be even more minimal
    12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
 
+/* knock code added in 10/2017
+   by Sree Harsha Totakura <sreeharsha@totakura.in> */
+
 #include <stdio.h>
 #include <memory.h>
 #include <errno.h>
@@ -34,10 +37,16 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
+/* Hardcoded values for certificates used for knocking */
 #define KNOCK_SERVER_CERT_PATH "knock_server.cer"
 #define KNOCK_CLIENT_CERT_PATH "knock_client.pfx"
 #define KNOCK_CLIENT_CERT_PASSWD "portknocking"
 
+/* Time in milliseconds we sleep after sending a knock request */
+#define KNOCK_WAIT_MS 300
+
+/* How many times do we try to knock? */
+#define RETRIES 3
 
 /**
  * Try to knock
@@ -53,7 +62,7 @@ try_knock (const char *ip, unsigned short port)
 
   kh = NULL;
   kh = knock_new(10,
-                 2,
+                 1,
                  0,
                  KNOCK_SERVER_CERT_PATH,
                  KNOCK_CLIENT_CERT_PATH,
@@ -84,7 +93,8 @@ int main (int argc, char* argv[])
   unsigned int port;
   SSL_METHOD const *meth;
   timeval start, end;
-
+  unsigned int retries;
+  struct timespec sleep_ns;
 
   if(argc != 3){
     printf("Usage: ./client <server-ip> <message-to-send>\n");
@@ -122,24 +132,35 @@ int main (int argc, char* argv[])
   sa.sin_addr.s_addr = inet_addr (ip);            /* Server IP */
   sa.sin_port        = htons     (port);          /* Server Port number */
 
-  err = connect(sd, (struct sockaddr*) &sa,
-		sizeof(sa));
-
-  /* The connect may have failed because the port may have to be sKnocked */
-  if (-1 == err)
-  {
-    if (-1 == try_knock(ip, port))
+  sleep_ns.tv_sec = KNOCK_WAIT_MS / 1000;
+  sleep_ns.tv_nsec = 1000 * 1000 * (KNOCK_WAIT_MS % 1000);
+  for (retries=0; retries < RETRIES; retries++) {
+    err = connect(sd, (struct sockaddr*) &sa,
+                  sizeof(sa));
+    if (0 == err)
+      break;
+    // The connect may have failed because the port may have to be knocked
+    if ((ECONNREFUSED != errno) &&
+        (ETIMEDOUT != errno) &&
+        (ECONNRESET != errno))
     {
-      printf("Failed to create sknock handle\n");
+      printf ("Cannot open a connection to destination: %s", strerror(errno));
       exit(1);
     }
-    printf("Knock packet sent!\n");
-
-    sleep(1);
-
-    err = connect (sd, (struct sockaddr*) &sa,
-                   sizeof(sa));
-    CHK_ERR(err, "connect");
+    if (-1 ==try_knock(ip, port))
+    {
+      printf ("Failed to create sknock handle\n");
+      exit(1);
+    }
+    printf ("Knock request sent\n");
+    if (-1 == nanosleep(&sleep_ns, NULL))
+      exit(-1);
+  }
+  if (RETRIES == retries)
+  {
+    printf("Could not connect after %u retires with knocking: %s\n",
+           strerror(errno));
+    exit(1);
   }
 
   /* ----------------------------------------------- */
