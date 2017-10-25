@@ -32,7 +32,7 @@
 /* Make these what you want for cert & key files */
 
 /* define default port */
-#define PORT 1111
+#define PORT 2000
 
 /*ECDHE-ECDSA*/
 #define ECDH_CERTF  "server-ecdhe-cert.crt"
