@@ -22,6 +22,8 @@
 #include <vttls/ssl.h>
 #include <vttls/err.h>
 
+#include <knock.h>
+
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
 
@@ -31,6 +33,41 @@
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+
+#define KNOCK_SERVER_CERT_PATH "knock_server.cer"
+#define KNOCK_CLIENT_CERT_PATH "knock_client.pfx"
+#define KNOCK_CLIENT_CERT_PASSWD "portknocking"
+
+
+/**
+ * Try to knock
+ *
+ * @param ip the IP addresses of the server to connect as a string
+ * @param port the port which has to be knocked
+ * @return -1 upon error; 0 on failure; 1 on success
+ */
+int
+try_knock (const char *ip, unsigned short port)
+{
+  struct KNOCK_Handle *kh;
+
+  kh = NULL;
+  kh = knock_new(10,
+                 2,
+                 0,
+                 KNOCK_SERVER_CERT_PATH,
+                 KNOCK_CLIENT_CERT_PATH,
+                 KNOCK_CLIENT_CERT_PASSWD);
+  if (NULL == kh)
+  {
+    return -1;
+  }
+  return knock_knock(kh,
+                     ip,
+                     port,
+                     1);
+}
+
 
 int main (int argc, char* argv[])
 {
@@ -43,6 +80,8 @@ int main (int argc, char* argv[])
   X509*		server_sec_cert;
   char*     str;
   char      buf [4096];
+  const char *ip;
+  unsigned int port;
   SSL_METHOD const *meth;
   timeval start, end;
 
@@ -51,6 +90,15 @@ int main (int argc, char* argv[])
     printf("Usage: ./client <server-ip> <message-to-send>\n");
     exit(0);
   }
+  err = knock_init();
+  if (0 != err)
+  {
+    printf("Failed to initialize libknock; "
+           "check your sKnock installation and PYTHONPATH\n");
+    exit(-1);
+  }
+  ip = argv[1];
+  port = 1111;
 
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms(); /* SSL_library_init() */
@@ -71,11 +119,24 @@ int main (int argc, char* argv[])
   memset(&sa, 0, sizeof(sa));
 
   sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr (argv[1]);   /* Server IP */
-  sa.sin_port        = htons     (1111);          /* Server Port number */
+  sa.sin_addr.s_addr = inet_addr (ip);            /* Server IP */
+  sa.sin_port        = htons     (port);          /* Server Port number */
 
   err = connect(sd, (struct sockaddr*) &sa,
-		sizeof(sa));                   CHK_ERR(err, "connect");
+		sizeof(sa));
+
+  /* The connect may have failed because the port may have to be sKnocked */
+  if (-1 == err)
+  {
+    if (-1 == try_knock(ip, port))
+    {
+      printf("Failed to create sknock handle\n");
+      exit(1);
+    }
+    err = connect (sd, (struct sockaddr*) &sa,
+                   sizeof(sa));
+    CHK_ERR(err, "connect");
+  }
 
   /* ----------------------------------------------- */
   /* Now we have TCP connection. Start SSL negotiation. */
