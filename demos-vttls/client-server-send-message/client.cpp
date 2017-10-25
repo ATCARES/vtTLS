@@ -158,8 +158,8 @@ int main (int argc, char* argv[])
   }
   if (RETRIES == retries)
   {
-    printf("Could not connect after %u retires with knocking: %s\n",
-           strerror(errno));
+    printf("Could not connect after %u retires with knocking.\n",
+           retries);
     exit(1);
   }
 
