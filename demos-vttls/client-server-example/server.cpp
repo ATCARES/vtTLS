@@ -19,6 +19,10 @@
 
 #include <string>
 
+#include "debug.h"
+#include "demo.h"
+
+
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
 /* Make these what you want for cert & key files */
@@ -37,9 +41,11 @@
 
 #define MAX_MSG_SIZE 16250
 
+// Error checking
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+
 
 int main (int argc, char* argv[])
 {
@@ -57,10 +63,16 @@ int main (int argc, char* argv[])
   SSL_METHOD const *meth;
   unsigned long long diff;
 
+  unsigned int port;
+
   if(argc != 2){
     printf("Usage: ./server <port>\n");
     exit(1);
   }  
+  port = atoi(argv[1]);
+  debug_printf("Arguments: Port %d\n", port);
+
+  demo_banner();
   
   /* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -106,27 +118,41 @@ int main (int argc, char* argv[])
   /* ----------------------------------------------- */
   /* Prepare TCP socket for receiving connections */
 
-  listen_sd = socket (AF_INET, SOCK_STREAM, 0);   CHK_ERR(listen_sd, "socket");
+  listen_sd = socket (AF_INET, SOCK_STREAM, 0);
+  CHK_ERR(listen_sd, "socket");
   
   memset(&sa_serv, 0, sizeof(sa_serv));
   sa_serv.sin_family      = AF_INET;
   sa_serv.sin_addr.s_addr = INADDR_ANY;
-  sa_serv.sin_port        = htons (atoi(argv[1]));          /* Server Port number */
+  sa_serv.sin_port        = htons (port);          /* Server Port number */
   
-  err = bind(listen_sd, (struct sockaddr*) &sa_serv,
-	     sizeof (sa_serv));                   CHK_ERR(err, "bind");
-	     
+  err = bind(listen_sd, (struct sockaddr*) &sa_serv, sizeof (sa_serv));
+  CHK_ERR(err, "bind");
+  debug_printf("Server bound to port %d\n", ntohs(sa_serv.sin_port));
+
+
   /* Receive a TCP connection. */
-	     
-  err = listen (listen_sd, 5);                    CHK_ERR(err, "listen");
+
+  err = listen (listen_sd, 5);
+  CHK_ERR(err, "listen");
+  debug_printf("Server listening on port %d\n", ntohs(sa_serv.sin_port));
+
   
   client_len = sizeof(sa_cli);
   sd = accept (listen_sd, (struct sockaddr*) &sa_cli, &client_len);
   CHK_ERR(sd, "accept");
-  close (listen_sd);
+  debug_print("Server accepted connection\n");
 
-  /* printf ("Connection from %lx, port %x\n",
-	  sa_cli.sin_addr.s_addr, sa_cli.sin_port); */
+  close (listen_sd);
+  debug_print("Server socket closed\n");
+
+  // convert IP address to string
+  char addr_buf[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &(sa_cli.sin_addr.s_addr), addr_buf, INET_ADDRSTRLEN);
+  // print IP and port
+  debug_printf("Connection from %s, port %d\n",
+		  addr_buf, ntohs(sa_cli.sin_port));
+
   
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */
@@ -137,8 +163,8 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
   
-  //printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  //printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY_FACTOR, ssl));
+  debug_printf("SSL connection using %s\n", SSL_get_cipher (ssl));
+  debug_printf("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY_FACTOR, ssl));
   
   /* Get client's certificate (note: beware of dynamic allocation) - opt */
 
@@ -166,10 +192,12 @@ int main (int argc, char* argv[])
 
   /* DATA EXCHANGE - Receive message and send reply. */
     
-  err = SSL_read (ssl, buf, sizeof(buf) - 1);                   CHK_SSL(err);
+  err = SSL_read (ssl, buf, sizeof(buf) - 1);
+  CHK_SSL(err);
   buf[err] = '\0';
-  // printf ("Got %d chars:'%s'\n", err, buf);
-   
+  debug_printf("Got %d chars\n", err);
+  debug_printf("Received file name '%s'\n", buf);
+
   FILE *file;
   char *buffer;
   long file_len;
@@ -179,12 +207,12 @@ int main (int argc, char* argv[])
   file_len = ftell(file);	// Get the current byte offset in the file
   rewind(file);				// Jump back to the beginning of the file
 
-  printf("File size is %ld\n", file_len);
+  debug_printf("File size is %ld\n", file_len);
 
-  buffer = (char *)malloc((file_len+1)*sizeof(char));	// Enough memory for file + \0
-  fread(buffer, file_len, 1, file);                	// Read in the entire file
+  buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
+  fread(buffer, file_len, 1, file);                	  // Read in the entire file
   buffer[file_len] = '\0';
-  fclose(file);                                   	// Close the file
+  fclose(file);                                   	  // Close the file
       
   char filelen[512];
   sprintf(filelen, "%ld", file_len);
@@ -223,10 +251,12 @@ int main (int argc, char* argv[])
   free(buffer);
   
   close (sd);
+  debug_print("Socket closed\n");
+
   SSL_free (ssl);
   SSL_CTX_free (ctx);
+  debug_print("SSL terminated\n");
   
   return 0;
-  
 }
-/* EOF - serv.cpp */
+/* EOF - server.cpp */

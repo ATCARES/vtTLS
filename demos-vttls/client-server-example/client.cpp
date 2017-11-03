@@ -15,6 +15,9 @@
 #include <vttls/ssl.h>
 #include <vttls/err.h>
 
+#include "debug.h"
+#include "demo.h"
+
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
 
@@ -24,6 +27,7 @@
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+
 
 int main (int argc, char* argv[])
 {
@@ -41,7 +45,7 @@ int main (int argc, char* argv[])
 
   const char *ip;
   unsigned int port;
-  const char *file_path;
+  const char *file_name;
 
   if(argc != 4){
     printf("Usage: ./client <server-ip> <server-port> <file-to-download>\n");
@@ -49,9 +53,8 @@ int main (int argc, char* argv[])
   }
   ip = argv[1];
   port = atoi(argv[2]);
-  file_path = argv[3];
-  
-  printf("Arguments: IP %s Port %u File %s\n", ip, port, file_path);
+  file_name = argv[3];
+  debug_printf("Arguments: IP %s Port %u File %s\n", ip, port, file_name);
   
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms(); /* SSL_library_init() */
@@ -73,12 +76,12 @@ int main (int argc, char* argv[])
   memset(&sa, 0, sizeof(sa));
   
   sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr (ip);   /* Server IP */
-  // sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
-  sa.sin_port        = htons     (port);          /* Server Port number */
+  sa.sin_addr.s_addr = inet_addr(ip);	/* Server IP */
+  sa.sin_port        = htons(port);		/* Server Port number */
   
   err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
   CHK_ERR(err, "connect");
+
 
   /* ----------------------------------------------- */
   /* Now we have TCP connection. Start SSL negotiation. */
@@ -101,7 +104,7 @@ int main (int argc, char* argv[])
   
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  printf ("The vtTLS Handshake took %llu ms\n", diff);
+  debug_printf("The vtTLS Handshake took %llu ms\n", diff);
   diff = 0;
   
   /* ssl->method->ssl_connect(s)*/
@@ -111,9 +114,8 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
 
-
-  printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY, ssl));
+  debug_printf("SSL connection using %s\n", SSL_get_cipher (ssl));
+  debug_printf("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY, ssl));
   
 
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
@@ -158,11 +160,12 @@ int main (int argc, char* argv[])
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
-  err = SSL_write (ssl, file_path, strlen(file_path));
+  // send file name to request file
+  err = SSL_write (ssl, file_name, strlen(file_name));
   CHK_SSL(err);
   
-  FILE *file_rcv = fopen(file_path, "ab+");
-  file_rcv = fopen(file_path, "w+");
+  FILE *file_rcv = fopen(file_name, "ab+");
+  file_rcv = fopen(file_name, "w+");
    
   err = SSL_read (ssl, buf, sizeof(buf) - 1);
   CHK_SSL(err);
@@ -195,7 +198,7 @@ int main (int argc, char* argv[])
     gettimeofday(&end, NULL);
     diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
     printf ("%llu\n", diff);
-    // printf ("The vtTLS took %llu ms to read %s.\n", diff, file_path);
+    debug_printf("The vtTLS took %llu ms to read %s.\n", diff, file_name);
     diff = 0;
   
   /*************/
@@ -203,12 +206,13 @@ int main (int argc, char* argv[])
 
   fprintf(file_rcv, "%s", buffer);
   
-  // printf("-- total_size: %d\n", err);
+  debug_printf("-- total_size: %d\n", err);
   
-  SSL_shutdown (ssl);  /* send SSL/TLS close_notify */
+  /* send SSL/TLS close_notify */
+  SSL_shutdown (ssl);
+
 
   /* Clean up. */
-
   free(buffer);
   fclose(file_rcv);
   
@@ -219,4 +223,4 @@ int main (int argc, char* argv[])
   return 0;
   
 }
-/* EOF - cli.cpp */
+/* EOF - client.cpp */
