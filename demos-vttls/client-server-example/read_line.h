@@ -8,8 +8,12 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* read_line.h
+/**
+ * 2017-11-03 Miguel Pardal <miguel.pardal@tecnico.ulisboa.pt>
+ * -> Code adapted to work with SSL_read
+ */
 
+/* read_line.h
    Header file for read_line.c.
 */
 #ifndef READ_LINE_H

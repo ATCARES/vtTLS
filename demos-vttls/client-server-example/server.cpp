@@ -196,60 +196,99 @@ int main (int argc, char* argv[])
 
   /* DATA EXCHANGE - Receive message and send reply. */
     
-  err = SSL_read (ssl, buf, sizeof(buf) - 1);
+//  err = SSL_read (ssl, buf, sizeof(buf) - 1);
+//  CHK_SSL(err);
+//  buf[err] = '\0';
+//  debug_printf("Got %d chars\n", err);
+//  debug_printf("Received file name '%s'\n", buf);
+
+  // read file name
+  err = readSSLLine(ssl, buf, sizeof(buf));
   CHK_SSL(err);
-  buf[err] = '\0';
-  debug_printf("Got %d chars\n", err);
-  debug_printf("Received file name '%s'\n", buf);
+  char file_name[256];
+  strncpy(file_name, buf, err-1);
+  debug_printf("Requested file name '%s'\n", file_name);
+
+  // read empty line separator
+  err = readSSLLine(ssl, buf, sizeof(buf));
+  CHK_SSL(err);
+  debug_print("Read separator line\n");
+
 
   FILE *file;
-  char *buffer;
+  //char *buffer;
   long file_len;
 
-  file = fopen(buf, "rb");	// Open the file in binary mode
+  file = fopen(file_name, "rb");	// Open the file in binary mode
   fseek(file, 0, SEEK_END);	// Jump to the end of the file
   file_len = ftell(file);	// Get the current byte offset in the file
   rewind(file);				// Jump back to the beginning of the file
-
   debug_printf("File size is %ld\n", file_len);
 
   char sizestring[205];
-  sprintf(sizestring, "%ld\n", file_len);
-  err = SSL_write (ssl, sizestring, strlen(sizestring));
+  sprintf(sizestring, "%ld", file_len);
+  err = SSL_write(ssl, sizestring, strlen(sizestring));
+  err = SSL_write(ssl, "\n", sizeof(char));
+  debug_print("Wrote file size\n");
+
+  err = SSL_write(ssl, "\n", sizeof(char));
+  debug_print("Wrote separator line\n");
 
 
-  buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
-  fread(buffer, file_len, 1, file);                	  // Read in the entire file
-  buffer[file_len] = '\0';
+
+  int bytesRead = 0;
+  int workBufferSize = 1024;
+  char workBuffer[1024];
+
+  // read until all bytes are received
+  while(bytesRead < file_len) {
+      int result = fread(workBuffer, sizeof(char), workBufferSize, file);
+      debug_printf("Read %d bytes from file\n", result);
+      if(result == -1) {
+          debug_println("Error while reading data from file!");
+          return -1;
+      }
+      bytesRead += result;
+
+      err = SSL_write(ssl, workBuffer, result);
+      debug_printf("Wrote %d bytes to secure socket\n", err);
+  }
+  debug_println("Read all expected bytes");
   fclose(file);                                   	  // Close the file
+
+
+//  buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
+//  fread(buffer, file_len, 1, file);                	  // Read in the entire file
+//  buffer[file_len] = '\0';
+//  fclose(file);                                   	  // Close the file
       
-  char filelen[512];
-  sprintf(filelen, "%ld", file_len);
+//  char filelen[512];
+//  sprintf(filelen, "%ld", file_len);
     
-  err = SSL_write (ssl, filelen, strlen(filelen));
+//  err = SSL_write(ssl, filelen, strlen(filelen));
  
   /*int counter = 0;
   
-  for (counter = 0; counter < 50; counter++){*/
-  /*********/
-    err = 0;
-    int i = file_len;
-    timeval start, end;
-    
-    gettimeofday(&start, NULL);
-    
-    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
-      err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
-    }
-    
-    err += SSL_write (ssl, buffer+err, i);
-
-    gettimeofday(&end, NULL);
-    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-    printf ("%llu\n", diff);
-    printf ("The vtTLS took %llu ms to send %s.\n", diff, buf);
-    diff = 0;
-  
+//  for (counter = 0; counter < 50; counter++){*/
+//  /*********/
+//    err = 0;
+//    int i = file_len;
+//    timeval start, end;
+//
+//    gettimeofday(&start, NULL);
+//
+//    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+//      err += SSL_write (ssl, buffer+err, MAX_MSG_SIZE);
+//    }
+//
+//    err += SSL_write (ssl, buffer+err, i);
+//
+//    gettimeofday(&end, NULL);
+//    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+//    printf ("%llu\n", diff);
+//    printf ("The vtTLS took %llu ms to send %s.\n", diff, buf);
+//    diff = 0;
+//
  /*********/
   //}
   
@@ -257,7 +296,7 @@ int main (int argc, char* argv[])
     
   /* Clean up. */
 
-  free(buffer);
+  //free(buffer);
   
   close (sd);
   debug_print("Socket closed\n");

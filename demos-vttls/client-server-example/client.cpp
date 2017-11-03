@@ -166,62 +166,96 @@ int main (int argc, char* argv[])
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
   // send file name to request file
-  err = SSL_write (ssl, file_to_download, strlen(file_to_download));
+  err = SSL_write(ssl, file_to_download, strlen(file_to_download));
+  CHK_SSL(err);
+  // add end-of-line
+  err = SSL_write(ssl, "\n", sizeof(char));
+  CHK_SSL(err);
+
+  // send empty line to terminate request
+  err = SSL_write(ssl, "\n", sizeof(char));
   CHK_SSL(err);
   
+
   // open file to save
-  FILE *file_rcv = fopen(file_to_save, "ab+");
-  file_rcv = fopen(file_to_save, "w+");
+//  FILE *file_rcv = fopen(file_to_save, "ab+");
+//  file_rcv = fopen(file_to_save, "w+");
+  FILE *file_rcv = fopen(file_to_save, "wb+");
    
   // read file size (as a string)
-  //err = SSL_read(ssl, buf, sizeof(buf) - 1);
-  err = readSSLLine(ssl, buf, sizeof(buf) - 1);
+//  err = readSSLLine(ssl, buf, sizeof(buf) - 1);
+  err = readSSLLine(ssl, buf, sizeof(buf));
   CHK_SSL(err);
-  buf[err] = '\0';
-  debug_printf("Got %d chars:'%s'\n", err, buf);
-  
-  long file_len = strtol(buf, (char**) NULL, 10);
-  debug_printf("filelen = %ld\n", file_len);
-  
-  // Enough memory for file + \0
-  char *buffer = (char *)malloc((file_len+1)*sizeof(char));
-  
-  int counter = 0;
-  
-  for (counter = 0; counter < 50; counter++) {
-  /*************/
-  
-    err = 0;
-    int total_size = 0;
-    i = file_len;
-    
-    gettimeofday(&start, NULL);
-    
-    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
-        err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
-    }
-    
-    err += SSL_read (ssl, buffer+err, i);
-    
-    gettimeofday(&end, NULL);
-    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-    printf ("%llu\n", diff);
-    debug_printf("The vtTLS took %llu ms to read %s.\n", diff, file_to_download);
-    diff = 0;
-  
-  /*************/
-  }
+  int bytesToDownload = atoi(buf);
+  debug_printf("%d bytes to download\n", bytesToDownload);
 
-  fprintf(file_rcv, "%s", buffer);
+  // read empty line separator
+  err = readSSLLine(ssl, buf, sizeof(buf));
+  CHK_SSL(err);
+  debug_print("Read separator line\n");
   
-  debug_printf("-- total_size: %d\n", err);
+  int bytesDownloaded = 0;
+  int workBufferSize = 1024;
+  char workBuffer[1024];
+  
+  // read until all expected bytes are received
+  while(bytesDownloaded < bytesToDownload) {
+      int result = SSL_read(ssl, workBuffer, workBufferSize);
+      debug_printf("Read more %d bytes\n", result);
+      if(result == -1) {
+          debug_println("Error while reading data from socket!");
+          return -1;
+      }
+      bytesDownloaded += result;
+
+      size_t wrote = fwrite(workBuffer, sizeof(char), result, file_rcv);
+      debug_printf("Wrote %lu bytes to file\n", wrote);
+  }
+  debug_println("Read all expected bytes");
+  
+  
+//  long file_len = strtol(buf, (char**) NULL, 10);
+//  debug_printf("filelen = %ld\n", file_len);
+//
+//  // Enough memory for file + \0
+//  char *buffer = (char *)malloc((file_len+1)*sizeof(char));
+//
+//  int counter = 0;
+//
+//  for (counter = 0; counter < 50; counter++) {
+//  /*************/
+//
+//    err = 0;
+//    int total_size = 0;
+//    i = file_len;
+//
+//    gettimeofday(&start, NULL);
+//
+//    for(i = file_len; i - MAX_MSG_SIZE > 0; i -= MAX_MSG_SIZE){
+//        err += SSL_read (ssl, buffer+err, MAX_MSG_SIZE);
+//    }
+//
+//    err += SSL_read (ssl, buffer+err, i);
+//
+//    gettimeofday(&end, NULL);
+//    diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
+//    printf ("%llu\n", diff);
+//    debug_printf("The vtTLS took %llu ms to read %s.\n", diff, file_to_download);
+//    diff = 0;
+//
+//  /*************/
+//  }
+//
+//  fprintf(file_rcv, "%s", buffer);
+//
+//  debug_printf("-- total_size: %d\n", err);
   
   /* send SSL/TLS close_notify */
   SSL_shutdown (ssl);
 
 
   /* Clean up. */
-  free(buffer);
+  //free(buffer);
   fclose(file_rcv);
   
   close (sd);

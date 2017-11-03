@@ -8,21 +8,26 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* read_line.c
+/**
+ * 2017-11-03 Miguel Pardal <miguel.pardal@tecnico.ulisboa.pt>
+ * -> Code adapted to work with SSL_read
+ */
 
+/* read_line.c
    Implementation of readLine().
 */
 #include <unistd.h>
 #include <errno.h>
 #include "read_line.h"                  /* Declaration of readLine() */
 
-/* Read characters from 'fd' until a newline is encountered. If a newline
-  character is not encountered in the first (n - 1) bytes, then the excess
-  characters are discarded. The returned string placed in 'buf' is
-  null-terminated and includes the newline character if it was read in the
-  first (n - 1) bytes. The function return value is the number of bytes
-  placed in buffer (which includes the newline character if encountered,
-  but excludes the terminating null byte). */
+/* Read characters from 'fd' until a newline is encountered.
+ * If a newline character is not encountered in the first (n - 1) bytes,
+ * then the excess characters are discarded.
+ * The returned string placed in 'buf' is  null-terminated and
+ * includes the newline character if it was read in the first (n - 1) bytes.
+ * The function return value is the number of bytes placed in buffer
+ * (which includes the newline character if encountered,
+ * but excludes the terminating null byte). */
 
 ssize_t
 readSSLLine(SSL *s, void *buffer, size_t n)
