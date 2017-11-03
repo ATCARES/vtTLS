@@ -19,6 +19,8 @@
 
 #include <string>
 
+#include "read_line.h"
+
 #include "debug.h"
 #include "demo.h"
 
@@ -157,9 +159,11 @@ int main (int argc, char* argv[])
   /* ----------------------------------------------- */
   /* TCP connection is ready. Do server side SSL. */
 
-  ssl = SSL_new (ctx);                           CHK_NULL(ssl);     /* CHECKED */
+  ssl = SSL_new (ctx);
+  CHK_NULL(ssl);     /* CHECKED */
   SSL_set_fd (ssl, sd);
-  err = SSL_accept (ssl);                        CHK_SSL(err);      /* CHECKED */
+  err = SSL_accept (ssl);
+  CHK_SSL(err);      /* CHECKED */
   
   /* Get the cipher - opt */
   
@@ -208,6 +212,11 @@ int main (int argc, char* argv[])
   rewind(file);				// Jump back to the beginning of the file
 
   debug_printf("File size is %ld\n", file_len);
+
+  char sizestring[205];
+  sprintf(sizestring, "%ld\n", file_len);
+  err = SSL_write (ssl, sizestring, strlen(sizestring));
+
 
   buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
   fread(buffer, file_len, 1, file);                	  // Read in the entire file

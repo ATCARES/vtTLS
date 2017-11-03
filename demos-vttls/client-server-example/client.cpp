@@ -15,6 +15,8 @@
 #include <vttls/ssl.h>
 #include <vttls/err.h>
 
+#include "read_line.h"
+
 #include "debug.h"
 #include "demo.h"
 
@@ -45,16 +47,19 @@ int main (int argc, char* argv[])
 
   const char *ip;
   unsigned int port;
-  const char *file_name;
+  const char *file_to_download;
+  const char *file_to_save;
 
-  if(argc != 4){
-    printf("Usage: ./client <server-ip> <server-port> <file-to-download>\n");
+  if(argc != 5){
+    printf("Usage: ./client <server-ip> <server-port> <file-to-download> <file-to-save>\n");
     exit(0);
   }
   ip = argv[1];
   port = atoi(argv[2]);
-  file_name = argv[3];
-  debug_printf("Arguments: IP %s Port %u File %s\n", ip, port, file_name);
+  file_to_download = argv[3];
+  file_to_save = argv[4];
+  debug_printf("Arguments: IP %s Port %u File to download '%s' File to save '%s'\n",
+		  ip, port, file_to_download, file_to_save);
   
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms(); /* SSL_library_init() */
@@ -161,22 +166,25 @@ int main (int argc, char* argv[])
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
   // send file name to request file
-  err = SSL_write (ssl, file_name, strlen(file_name));
+  err = SSL_write (ssl, file_to_download, strlen(file_to_download));
   CHK_SSL(err);
   
-  FILE *file_rcv = fopen(file_name, "ab+");
-  file_rcv = fopen(file_name, "w+");
+  // open file to save
+  FILE *file_rcv = fopen(file_to_save, "ab+");
+  file_rcv = fopen(file_to_save, "w+");
    
-  err = SSL_read (ssl, buf, sizeof(buf) - 1);
+  // read file size (as a string)
+  //err = SSL_read(ssl, buf, sizeof(buf) - 1);
+  err = readSSLLine(ssl, buf, sizeof(buf) - 1);
   CHK_SSL(err);
   buf[err] = '\0';
-  // printf ("Got %d chars:'%s'\n", err, buf);
+  debug_printf("Got %d chars:'%s'\n", err, buf);
   
   long file_len = strtol(buf, (char**) NULL, 10);
+  debug_printf("filelen = %ld\n", file_len);
   
-  // printf("filelen = %ld\n", file_len);
-  
-  char *buffer = (char *)malloc((file_len+1)*sizeof(char)); // Enough memory for file + \0
+  // Enough memory for file + \0
+  char *buffer = (char *)malloc((file_len+1)*sizeof(char));
   
   int counter = 0;
   
@@ -198,7 +206,7 @@ int main (int argc, char* argv[])
     gettimeofday(&end, NULL);
     diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
     printf ("%llu\n", diff);
-    debug_printf("The vtTLS took %llu ms to read %s.\n", diff, file_name);
+    debug_printf("The vtTLS took %llu ms to read %s.\n", diff, file_to_download);
     diff = 0;
   
   /*************/
