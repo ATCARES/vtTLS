@@ -124,7 +124,8 @@ int main (int argc, char* argv[])
   /* ----------------------------------------------- */
   /* Create a socket and connect to server using normal socket calls. */
 
-  sd = socket (AF_INET, SOCK_STREAM, 0);       CHK_ERR(sd, "socket");
+  sd = socket (AF_INET, SOCK_STREAM, 0);
+  CHK_ERR(sd, "socket");
 
   memset(&sa, 0, sizeof(sa));
 
@@ -166,7 +167,8 @@ int main (int argc, char* argv[])
   /* ----------------------------------------------- */
   /* Now we have TCP connection. Start SSL negotiation. */
 
-  ssl = SSL_new (ctx);                         CHK_NULL(ssl);
+  ssl = SSL_new (ctx);
+  CHK_NULL(ssl);
 
   SSL_set_fd (ssl, sd);
   /* Sets the file descriptor fd as the input/output
@@ -178,7 +180,8 @@ int main (int argc, char* argv[])
 
   gettimeofday(&start, NULL);
 
-  err = SSL_connect (ssl);                     CHK_SSL(err);
+  err = SSL_connect (ssl);
+  CHK_SSL(err);
 
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
@@ -198,9 +201,11 @@ int main (int argc, char* argv[])
 
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
 
-  server_cert = SSL_get_peer_certificate (ssl);       			 CHK_NULL(server_cert);
+  server_cert = SSL_get_peer_certificate (ssl);
+  CHK_NULL(server_cert);
 
-  server_sec_cert = SSL_get_n_peer_certificate (DIVERSITY, ssl);       CHK_NULL(server_sec_cert);
+  server_sec_cert = SSL_get_n_peer_certificate (DIVERSITY, ssl);
+  CHK_NULL(server_sec_cert);
 
   printf ("Server certificate:\n");
 
@@ -235,7 +240,8 @@ int main (int argc, char* argv[])
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
-  err = SSL_write (ssl, argv[2], strlen(argv[2]));  CHK_SSL(err);
+  err = SSL_write (ssl, argv[2], strlen(argv[2]));
+  CHK_SSL(err);
 
   printf("-- total_size: %d\n", err);
 
