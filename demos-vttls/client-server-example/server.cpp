@@ -177,7 +177,9 @@ int main (int argc, char* argv[])
   file = fopen(buf, "rb");	// Open the file in binary mode
   fseek(file, 0, SEEK_END);	// Jump to the end of the file
   file_len = ftell(file);	// Get the current byte offset in the file
-  rewind(file);			// Jump back to the beginning of the file
+  rewind(file);				// Jump back to the beginning of the file
+
+  printf("File size is %ld\n", file_len);
 
   buffer = (char *)malloc((file_len+1)*sizeof(char));	// Enough memory for file + \0
   fread(buffer, file_len, 1, file);                	// Read in the entire file
@@ -185,7 +187,7 @@ int main (int argc, char* argv[])
   fclose(file);                                   	// Close the file
       
   char filelen[512];
-  sprintf(filelen, "%d", file_len);
+  sprintf(filelen, "%ld", file_len);
     
   err = SSL_write (ssl, filelen, strlen(filelen));
  
@@ -208,7 +210,7 @@ int main (int argc, char* argv[])
     gettimeofday(&end, NULL);
     diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
     printf ("%llu\n", diff);
-    // printf ("The vtTLS took %llu ms to send %s.\n", diff, buf);
+    printf ("The vtTLS took %llu ms to send %s.\n", diff, buf);
     diff = 0;
   
  /*********/

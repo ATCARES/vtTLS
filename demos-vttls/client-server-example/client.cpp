@@ -19,6 +19,7 @@
 #define HOME "./"
 
 #define MAX_MSG_SIZE 16250
+#define DIVERSITY 2
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
@@ -38,12 +39,19 @@ int main (int argc, char* argv[])
   SSL_METHOD const *meth;
   timeval start, end;
 
+  const char *ip;
+  unsigned int port;
+  const char *file_path;
 
   if(argc != 4){
     printf("Usage: ./client <server-ip> <server-port> <file-to-download>\n");
     exit(0);
   }
+  ip = argv[1];
+  port = atoi(argv[2]);
+  file_path = argv[3];
   
+  printf("Arguments: IP %s Port %u File %s\n", ip, port, file_path);
   
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms(); /* SSL_library_init() */
@@ -59,22 +67,24 @@ int main (int argc, char* argv[])
   /* ----------------------------------------------- */
   /* Create a socket and connect to server using normal socket calls. */
   
-  sd = socket (AF_INET, SOCK_STREAM, 0);       CHK_ERR(sd, "socket");
+  sd = socket (AF_INET, SOCK_STREAM, 0);
+  CHK_ERR(sd, "socket");
  
   memset(&sa, 0, sizeof(sa));
   
   sa.sin_family      = AF_INET;
-  sa.sin_addr.s_addr = inet_addr (argv[1]);   /* Server IP */
+  sa.sin_addr.s_addr = inet_addr (ip);   /* Server IP */
   // sa.sin_addr.s_addr = inet_addr ("172.17.39.8");   /* Server IP */
-  sa.sin_port        = htons     (atoi(argv[2]));          /* Server Port number */
+  sa.sin_port        = htons     (port);          /* Server Port number */
   
-  err = connect(sd, (struct sockaddr*) &sa,
-		sizeof(sa));                   CHK_ERR(err, "connect");
+  err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
+  CHK_ERR(err, "connect");
 
   /* ----------------------------------------------- */
-  /* Now we have TCP conncetion. Start SSL negotiation. */
+  /* Now we have TCP connection. Start SSL negotiation. */
   
-  ssl = SSL_new (ctx);                         CHK_NULL(ssl);
+  ssl = SSL_new (ctx);
+  CHK_NULL(ssl);
   
   SSL_set_fd (ssl, sd);
   /* Sets the file descriptor fd as the input/output
@@ -86,11 +96,12 @@ int main (int argc, char* argv[])
   
   gettimeofday(&start, NULL);
   
-  err = SSL_connect (ssl);                     CHK_SSL(err);
+  err = SSL_connect (ssl);
+  CHK_SSL(err);
   
   gettimeofday(&end, NULL);
   diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
-  // printf ("The vtTLS Handshake took %llu ms\n", diff);
+  printf ("The vtTLS Handshake took %llu ms\n", diff);
   diff = 0;
   
   /* ssl->method->ssl_connect(s)*/
@@ -100,16 +111,18 @@ int main (int argc, char* argv[])
   
   /* Get the cipher - opt */
 
-  /*
+
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_sec_cipher (ssl));
-  */
+  printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY, ssl));
   
+
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
   /*
-  server_cert = SSL_get_peer_certificate (ssl);       			 CHK_NULL(server_cert);
+  server_cert = SSL_get_peer_certificate (ssl);
+  CHK_NULL(server_cert);
   
-  server_sec_cert = SSL_get_second_peer_certificate (ssl);       CHK_NULL(server_sec_cert);
+  server_sec_cert = SSL_get_second_peer_certificate (ssl);
+  CHK_NULL(server_sec_cert);
   
   printf ("Server certificate:\n");
   
@@ -141,15 +154,18 @@ int main (int argc, char* argv[])
   X509_free (server_cert);
   X509_free (server_sec_cert);
   */
+
   /* --------------------------------------------------- */
   /* DATA EXCHANGE - Send a message and receive a reply. */
 
-  err = SSL_write (ssl, argv[3], strlen(argv[3]));  CHK_SSL(err);
+  err = SSL_write (ssl, file_path, strlen(file_path));
+  CHK_SSL(err);
   
-  FILE *file_rcv = fopen(argv[3], "ab+");
-  file_rcv = fopen(argv[3], "w+");
+  FILE *file_rcv = fopen(file_path, "ab+");
+  file_rcv = fopen(file_path, "w+");
    
-  err = SSL_read (ssl, buf, sizeof(buf) - 1);                     CHK_SSL(err);
+  err = SSL_read (ssl, buf, sizeof(buf) - 1);
+  CHK_SSL(err);
   buf[err] = '\0';
   // printf ("Got %d chars:'%s'\n", err, buf);
   
@@ -161,7 +177,7 @@ int main (int argc, char* argv[])
   
   int counter = 0;
   
-  for (counter = 0; counter < 50; counter++){
+  for (counter = 0; counter < 50; counter++) {
   /*************/
   
     err = 0;
@@ -179,7 +195,7 @@ int main (int argc, char* argv[])
     gettimeofday(&end, NULL);
     diff = 1000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000;
     printf ("%llu\n", diff);
-    // printf ("The vtTLS took %llu ms to read %s.\n", diff, argv[3]);
+    // printf ("The vtTLS took %llu ms to read %s.\n", diff, file_path);
     diff = 0;
   
   /*************/
