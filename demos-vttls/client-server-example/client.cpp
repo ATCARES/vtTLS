@@ -213,13 +213,13 @@ int main(int argc, char* argv[]) {
 			while (bytesDownloaded < bytesToDownload) {
 				int readResult = SSL_read(ssl, buf, BUF_SZ);
 				CHK_SSL(readResult);
-				debug_printf("Read %d bytes from secure socket\n", readResult);
+				trace_printf("Read %d bytes from secure socket\n", readResult);
 				bytesDownloaded += readResult;
 				// write bytes to open file
 				size_t writeResult = fwrite(buf, sizeof(char), readResult,
 						file_rcv);
 				CHK_ERR(writeResult, "file");
-				debug_printf("Wrote %lu bytes to file\n", writeResult);
+				trace_printf("Wrote %lu bytes to file\n", writeResult);
 			}
 			gettimeofday(&end, NULL);
 			diff = 1000 * (end.tv_sec - start.tv_sec)
@@ -230,7 +230,7 @@ int main(int argc, char* argv[]) {
 		}
 		// close file
 		fclose(file_rcv);
-		debug_println("File closed");
+		trace_println("File closed");
 	}
 
 	/* send SSL/TLS close_notify */
