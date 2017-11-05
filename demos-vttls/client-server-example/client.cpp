@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 	sa.sin_addr.s_addr = inet_addr(ip); /* Server IP */
 	sa.sin_port = htons(port); /* Server Port number */
 
-	demo_printf("Connecting to server at %s:%d\n", ip, port);
+	demo_printf("Connect to server at %s\n", ip);
 
 	err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
 	CHK_ERR(err, "connect");
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
 	/* -------------------------------------------------- */
 	/* Now we have TCP connection. Start SSL negotiation. */
 
-	demo_println("Start negotiation");
+	demo_println("Start negotiation of security parameters");
 	demo_println("Send list of supported ciphers");
 
 	ssl = SSL_new(ctx);
@@ -185,11 +185,11 @@ int main(int argc, char* argv[]) {
 	demo_printf("Server presented %d certificates", DIVERSITY_FACTOR);
 	demo_println(", signed by different CAs");
 
-	demo_printf("Server chose %d crypto protections...\n", DIVERSITY_FACTOR);
-	demo_printf("Activating encryption layer 1 with %s ...\n", cipher1);
-	demo_printf("Activating encryption layer 2 with %s ...\n", cipher2);
+	demo_printf("Server chose %d crypto protections\n", DIVERSITY_FACTOR);
+	demo_printf("Activate encryption layer 1 with %s\n", cipher1);
+	demo_printf("Activate encryption layer 2 with %s\n", cipher2);
 
-	demo_println("Sending secure request to server...");
+	demo_println("Send secure request to server");
 
 
 	/* --------------------------------------------------- */
@@ -263,7 +263,7 @@ int main(int argc, char* argv[]) {
 	close(sd);
 	debug_println("Socket closed");
 
-	demo_println("Transmission complete.");
+	demo_println("Transmission complete");
 	if (bytesToDownload > 0)
 		demo_open_file(file_to_save);
 

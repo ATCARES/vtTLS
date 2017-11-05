@@ -48,7 +48,7 @@
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
 // Buffer settings
-#define BUF_SZ 8 * 1024
+#define BUF_SZ 16 * 1024
 
 #define MAX_FILE_NAME 255
 #define MAX_FILE_PATH 4096
@@ -133,8 +133,8 @@ int main(int argc, char* argv[]) {
 		debug_printf("Connection from %s, port %d\n", addr_buf,
 				ntohs(sa_cli.sin_port));
 
-		demo_println(
-				"A client has initiated a connection");
+		demo_println("Client connection");
+		demo_println("Start negotiation of security parameters");
 
 
 		/* ----------------------------------------------- */
@@ -189,12 +189,10 @@ int main(int argc, char* argv[]) {
 
 		/* Do server side SSL. */
 
-		demo_printf(
-				"Client and server are negotiating %d crypto protections...\n",
-				DIVERSITY_FACTOR);
-		demo_printf(
-				"Server presents %d different certificates, signed by different CAs\n",
-				DIVERSITY_FACTOR);
+		demo_println("Received list of ciphers supported by the client");
+		demo_printf("Choosing %d ciphers\n", DIVERSITY_FACTOR);
+		demo_printf("Sending %d different certificates", DIVERSITY_FACTOR);
+		demo_println(", signed by different CAs");
 		
 		ssl = SSL_new(ctx);
 		CHK_NULL(ssl); /* CHECKED */
@@ -202,7 +200,7 @@ int main(int argc, char* argv[]) {
 		err = SSL_accept(ssl);
 		CHK_SSL(err); /* CHECKED */
 
-		demo_println("Negotiation concluded with success.");
+		demo_println("Negotiation concluded with success");
 
 		
 		/* Get the cipher - opt */
@@ -237,8 +235,8 @@ int main(int argc, char* argv[]) {
 		/* --------------------------------------------------- */
 		/* DATA EXCHANGE - Receive message and send reply. */
 
-		demo_printf("Activating encryption layer 1 with %s ...\n", cipher1);
-		demo_printf("Activating encryption layer 2 with %s ...\n", cipher2);
+		demo_printf("Activate encryption layer 1 with %s\n", cipher1);
+		demo_printf("Activate encryption layer 2 with %s\n", cipher2);
 
 		/* REQUEST */
 
@@ -289,7 +287,7 @@ int main(int argc, char* argv[]) {
 		trace_println("Wrote separator line");
 
 		if (file_len > 0) {
-			demo_println("Returning secure data to client...");
+			demo_print("Returning secure data to client");
 					
 			// write file to secure socket
 			int bytesRead = 0;
@@ -302,18 +300,22 @@ int main(int argc, char* argv[]) {
 				int writeResult = SSL_write(ssl, buf, readResult);
 				CHK_SSL(writeResult);
 				trace_printf("Wrote %d bytes to secure socket\n", writeResult);
+
+				demo_print(".");
 			}
 			debug_println("Wrote all file bytes");
 			// Close the file
 			fclose(file);
 			trace_println("File closed");
+			demo_println("");
 		}
 
 		/* Clean up. */
 		close(sd);
 		debug_println("Client socket closed");
 
-		demo_println("Transmission complete.");
+		demo_println("Transmission complete");
+		demo_println("");
 		
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
