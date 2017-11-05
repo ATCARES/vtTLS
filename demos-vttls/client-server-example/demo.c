@@ -24,11 +24,12 @@ void demo_open_file(const char* filePath) {
 		const char *fileCmd = "file";
 		const int fileCmdLen = strlen(fileCmd);
 
-		const int cmdLen = fileCmdLen + 1 + filePathLen + 1;
+		// add 2 for space and null terminator
+		const int cmdLen = fileCmdLen + filePathLen + 2;
 		char *cmd = (char*) malloc(cmdLen);
-		sprintf(cmd, "%s %s\n", fileCmd, filePath);
+		sprintf(cmd, "%s %s", fileCmd, filePath);
 
-		// execute command
+		// execute command in child process
 		system(cmd);
 
 		free(cmd);
@@ -40,12 +41,12 @@ void demo_open_file(const char* filePath) {
 		const char *reDirAllOut = "> /dev/null 2>&1";
 		const int reDirAllOutLen = strlen(reDirAllOut);
 
-		const int cmdLen = openCmdLen + 1 + filePathLen + 1 + reDirAllOutLen
-				+ 1;
+		// add 3 for spaces and null terminator
+		const int cmdLen = openCmdLen + filePathLen + reDirAllOutLen + 3;
 		char *cmd = (char*) malloc(cmdLen);
-		sprintf(cmd, "%s %s %s\n", openCmd, filePath, reDirAllOut);
+		sprintf(cmd, "%s %s %s", openCmd, filePath, reDirAllOut);
 
-		// execute command
+		// execute command in child process
 		system(cmd);
 
 		free(cmd);
