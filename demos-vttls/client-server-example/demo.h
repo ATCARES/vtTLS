@@ -8,7 +8,10 @@
 #ifndef VTTLS_DEMO_H_
 #define VTTLS_DEMO_H_
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
 
 //
 // Demonstration macros
@@ -38,6 +41,9 @@
 
 #define demo_banner() \
 	    	do { if (DEMO) demo_print(BANNER); } while (0)
+
+// open file on graphical terminal
+void demo_open_file(const char* filePath);
 
 
 #endif /* VTTLS_DEMO_H_ */

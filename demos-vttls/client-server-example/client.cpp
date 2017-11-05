@@ -23,8 +23,7 @@
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
 
-#define MAX_MSG_SIZE 16250
-#define DIVERSITY 2
+#define DIVERSITY_FACTOR 2
 
 // Error checking
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
@@ -33,6 +32,7 @@
 
 // Buffer settings
 #define BUF_SZ 2 * 1024
+
 
 int main(int argc, char* argv[]) {
 	int err;
@@ -99,12 +99,18 @@ int main(int argc, char* argv[]) {
 	sa.sin_addr.s_addr = inet_addr(ip); /* Server IP */
 	sa.sin_port = htons(port); /* Server Port number */
 
+	demo_printf("Connecting to server at %s:%d\n", ip, port);
+
 	err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
 	CHK_ERR(err, "connect");
 	debug_println("Connected to server");
 
-	/* ----------------------------------------------- */
+
+	/* -------------------------------------------------- */
 	/* Now we have TCP connection. Start SSL negotiation. */
+
+	demo_println("Start negotiation");
+	demo_println("Send list of supported ciphers");
 
 	ssl = SSL_new(ctx);
 	CHK_NULL(ssl);
@@ -131,16 +137,19 @@ int main(int argc, char* argv[]) {
 
 	/* Get the cipher - opt */
 
-	debug_printf("SSL connection using %s\n", SSL_get_cipher (ssl));
-	debug_printf("SSL connection using %s\n",
-			SSL_get_n_cipher (DIVERSITY, ssl));
+	const char* cipher1 = SSL_get_cipher(ssl);
+	debug_printf("SSL connection using %s\n", cipher1);
+
+	const char* cipher2 = SSL_get_n_cipher(DIVERSITY_FACTOR, ssl);
+	debug_printf("SSL connection using %s\n", cipher2);
+
 
 	/* Get server's certificate (note: beware of dynamic allocation) - opt */
 
 	server_cert = SSL_get_peer_certificate(ssl);
 	CHK_NULL(server_cert);
 
-	server_sec_cert = SSL_get_n_peer_certificate(DIVERSITY, ssl);
+	server_sec_cert = SSL_get_n_peer_certificate(DIVERSITY_FACTOR, ssl);
 	CHK_NULL(server_sec_cert);
 
 	debug_println("Server certificate:");
@@ -173,6 +182,16 @@ int main(int argc, char* argv[]) {
 	X509_free(server_cert);
 	X509_free(server_sec_cert);
 
+	demo_printf("Server presented %d certificates", DIVERSITY_FACTOR);
+	demo_println(", signed by different CAs");
+
+	demo_printf("Server chose %d crypto protections...\n", DIVERSITY_FACTOR);
+	demo_printf("Activating encryption layer 1 with %s ...\n", cipher1);
+	demo_printf("Activating encryption layer 2 with %s ...\n", cipher2);
+
+	demo_println("Sending secure request to server...");
+
+
 	/* --------------------------------------------------- */
 	/* DATA EXCHANGE - Send a message and receive a reply. */
 
@@ -199,6 +218,7 @@ int main(int argc, char* argv[]) {
 		printf("File not found on server!\n");
 	} else {
 		debug_printf("%d bytes to download\n", bytesToDownload);
+		demo_println("Receiving secure response data from server...");
 	}
 
 	// read empty line separator
@@ -242,6 +262,10 @@ int main(int argc, char* argv[]) {
 	/* Clean up. */
 	close(sd);
 	debug_println("Socket closed");
+
+	demo_println("Transmission complete.");
+	if (bytesToDownload > 0)
+		demo_open_file(file_to_save);
 
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
