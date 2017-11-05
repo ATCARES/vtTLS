@@ -48,7 +48,7 @@
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
 // Buffer settings
-#define BUF_SZ 2048
+#define BUF_SZ 8 * 1024
 
 #define MAX_FILE_NAME 255
 #define MAX_FILE_PATH 4096
@@ -90,6 +90,8 @@ int main(int argc, char* argv[]) {
 	}
 	port = atoi(argv[1]);
 	debug_printf("Arguments: Port %d\n", port);
+
+	debug_printf("Work buffer size %d bytes\n", BUF_SZ);
 
 	demo_banner();
 	demo_printf("Server listening on port %d\n", port);
@@ -239,11 +241,14 @@ int main(int argc, char* argv[]) {
 
 		/* REQUEST */
 
-		// read file name line
+		// read file name line (result includes line break)
 		err = readSSLLine(ssl, buf, BUF_SZ);
 		CHK_SSL(err);
+		// copy file name from work buffer, removing line break
 		strncpy(file_name, buf, err - 1);
+		file_name[err - 1] = '\0';
 		debug_printf("Requested file name '%s'\n", file_name);
+		demo_printf("Client requested %s\n", file_name);
 
 		// read empty line separator
 		err = readSSLLine(ssl, buf, BUF_SZ);
@@ -253,8 +258,11 @@ int main(int argc, char* argv[]) {
 		FILE *file;
 		long file_len;
 
-		file = fopen(file_name, "rb");	// Open the file in binary mode
+		// Open the file in binary mode
+		file = fopen(file_name, "rb");
+		//file = fopen("files/Tux.png", "rb");
 		if (file == NULL) {
+			demo_println("Client requested file that does not exist");
 			debug_printf("fopen() error: %s\n", strerror(errno));
 			// -1 means that the file does not exist
 			file_len = -1;

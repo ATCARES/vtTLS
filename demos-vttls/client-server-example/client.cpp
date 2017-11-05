@@ -32,7 +32,7 @@
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
 // Buffer settings
-#define BUF_SZ 1024
+#define BUF_SZ 2 * 1024
 
 int main(int argc, char* argv[]) {
 	int err;
@@ -69,6 +69,9 @@ int main(int argc, char* argv[]) {
 	debug_printf(
 			"Arguments: IP %s Port %u File to download '%s' File to save '%s'\n",
 			ip, port, file_to_download, file_to_save);
+
+	debug_printf("Work buffer size %d bytes\n", BUF_SZ);
+
 
 	/* SSL initialization */
 
