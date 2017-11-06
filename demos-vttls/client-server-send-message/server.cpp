@@ -30,9 +30,6 @@
 #define HOME "./"
 /* Make these what you want for cert & key files */
 
-/* define default port */
-#define PORT 2000
-
 /*ECDHE-ECDSA*/
 #define ECDH_CERTF  "server-ecdhe-cert.crt"
 #define ECDH_KEYF   "server-ecdhe-key.pem"
@@ -43,13 +40,13 @@
 #define ECDH2_CERTF    "server-dh-cert.crt"
 #define ECDH2_KEYF     "server-dh-key.pem"
 
-#define MAX_MSG_SIZE 16250
-
 #define DIVERSITY_FACTOR 2
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
+
+#define BUF_SZ 4 * 1024
 
 int main(int argc, char* argv[]) {
 	int err;
@@ -62,8 +59,16 @@ int main(int argc, char* argv[]) {
 	SSL* ssl;
 	X509* client_cert;
 	char* str;
-	char buf[4096];
+	char buf[BUF_SZ];
 	SSL_METHOD const *meth;
+
+	unsigned int port;
+
+	if (argc != 2) {
+		printf("Usage: ./server <port>\n");
+		exit(0);
+	}
+	port = atoi(argv[1]);
 
 	/* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -110,7 +115,7 @@ int main(int argc, char* argv[]) {
 		exit(5);
 	}
 
-	/* ----------------------------------------------- */
+	/* -------------------------------------------- */
 	/* Prepare TCP socket for receiving connections */
 
 	listen_sd = socket(AF_INET, SOCK_STREAM, 0);
@@ -119,12 +124,10 @@ int main(int argc, char* argv[]) {
 	memset(&sa_serv, 0, sizeof(sa_serv));
 	sa_serv.sin_family = AF_INET;
 	sa_serv.sin_addr.s_addr = INADDR_ANY;
-	sa_serv.sin_port = htons(PORT); /* Server Port number */
+	sa_serv.sin_port = htons(port); /* Server Port number */
 
 	err = bind(listen_sd, (struct sockaddr*) &sa_serv, sizeof(sa_serv));
 	CHK_ERR(err, "bind");
-
-	printf("Server listening on port %d\n", ntohs(sa_serv.sin_port));
 
 	/* Receive a TCP connection. */
 
@@ -142,7 +145,7 @@ int main(int argc, char* argv[]) {
 	// print IP and port
 	printf("Connection from %s, port %d\n", addr_buf, ntohs(sa_cli.sin_port));
 
-	/* ----------------------------------------------- */
+	/* -------------------------------------------- */
 	/* TCP connection is ready. Do server side SSL. */
 
 	ssl = SSL_new(ctx);
@@ -174,4 +177,4 @@ int main(int argc, char* argv[]) {
 	return 0;
 
 }
-/* EOF - serv.cpp */
+/* EOF - server.cpp */
