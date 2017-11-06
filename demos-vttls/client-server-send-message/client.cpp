@@ -46,7 +46,7 @@
 #define KNOCK_WAIT_MS 300
 
 /* How many times do we try to knock? */
-#define RETRIES 3
+#define KNOCK_RETRIES 3
 
 /**
  * Try to knock
@@ -135,7 +135,7 @@ int main (int argc, char* argv[])
 
   sleep_ns.tv_sec = KNOCK_WAIT_MS / 1000;
   sleep_ns.tv_nsec = 1000 * 1000 * (KNOCK_WAIT_MS % 1000);
-  for (retries=0; retries < RETRIES; retries++) {
+  for (retries=0; retries < KNOCK_RETRIES; retries++) {
     err = connect(sd, (struct sockaddr*) &sa,
                   sizeof(sa));
     if (0 == err)
@@ -157,7 +157,7 @@ int main (int argc, char* argv[])
     if (-1 == nanosleep(&sleep_ns, NULL))
       exit(-1);
   }
-  if (RETRIES == retries)
+  if (KNOCK_RETRIES == retries)
   {
     printf("Could not connect after %u retires with knocking.\n",
            retries);
