@@ -31,13 +31,13 @@
 #define HOME "./"
 
 #define MAX_MSG_SIZE 16250
-#define DIVERSITY 2
+#define DIVERSITY_FACTOR 2
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-/* Hardcoded values for certificates used for knocking */
+/* Hard-coded values for certificates used for knocking */
 #define KNOCK_SERVER_CERT_PATH "knock_server.cer"
 #define KNOCK_CLIENT_CERT_PATH "knock_client.pfx"
 #define KNOCK_CLIENT_CERT_PASSWD "portknocking"
@@ -196,7 +196,7 @@ int main (int argc, char* argv[])
   /* Get the cipher - opt */
 
   printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-  printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY, ssl));
+  printf ("SSL connection using %s\n", SSL_get_n_cipher (DIVERSITY_FACTOR, ssl));
 
 
   /* Get server's certificate (note: beware of dynamic allocation) - opt */
@@ -204,7 +204,7 @@ int main (int argc, char* argv[])
   server_cert = SSL_get_peer_certificate (ssl);
   CHK_NULL(server_cert);
 
-  server_sec_cert = SSL_get_n_peer_certificate (DIVERSITY, ssl);
+  server_sec_cert = SSL_get_n_peer_certificate (DIVERSITY_FACTOR, ssl);
   CHK_NULL(server_sec_cert);
 
   printf ("Server certificate:\n");
