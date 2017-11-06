@@ -15,6 +15,8 @@
 #include <vttls/ssl.h>
 #include <vttls/err.h>
 
+#include "sknock.h"
+
 #include "read_line.h"
 
 #include "debug.h"
@@ -31,7 +33,7 @@
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
 // Buffer settings
-#define BUF_SZ 2 * 1024
+#define BUF_SZ 8 * 1024
 
 
 int main(int argc, char* argv[]) {
@@ -43,7 +45,7 @@ int main(int argc, char* argv[]) {
 	X509* server_cert;
 	X509* server_sec_cert;
 	char* str;
-	char buf[4096];
+	char buf[BUF_SZ];
 	SSL_METHOD const *meth;
 	timeval start, end;
 
@@ -72,6 +74,9 @@ int main(int argc, char* argv[]) {
 
 	debug_printf("Work buffer size %d bytes\n", BUF_SZ);
 
+	/* sKnock initialization */
+	err = sknock_init();
+	CHK_ERR(err, "sknock");
 
 	/* SSL initialization */
 
@@ -101,9 +106,18 @@ int main(int argc, char* argv[]) {
 
 	demo_printf("Connect to server at %s\n", ip);
 
-	err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
-	CHK_ERR(err, "connect");
-	debug_println("Connected to server");
+	if (0) {
+		//  without sKnock
+		err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
+		CHK_ERR(err, "connect");
+		debug_println("Connected to server");
+	} else {
+		// with sKnock
+		err = sknock_connect(sd, (struct sockaddr*) &sa, sizeof(sa));
+		CHK_ERR(err, "sknock");
+		debug_println("Connected to server with the help of sKnock");
+	}
+
 
 
 	/* -------------------------------------------------- */

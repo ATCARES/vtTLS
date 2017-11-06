@@ -48,7 +48,7 @@
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
 // Buffer settings
-#define BUF_SZ 16 * 1024
+#define BUF_SZ 8 * 1024
 
 #define MAX_FILE_NAME 255
 #define MAX_FILE_PATH 4096
@@ -96,6 +96,7 @@ int main(int argc, char* argv[]) {
 
 	demo_banner();
 	demo_printf("Server listening on port %d\n", port);
+	demo_println("");
 
 
 	/* ----------------------------------------------- */
