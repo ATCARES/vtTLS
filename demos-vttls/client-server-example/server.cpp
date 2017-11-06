@@ -201,6 +201,7 @@ int main(int argc, char* argv[]) {
 		CHK_SSL(err); /* CHECKED */
 
 		demo_println("Negotiation concluded with success");
+		demo_println("");
 
 		
 		/* Get the cipher - opt */
@@ -315,6 +316,7 @@ int main(int argc, char* argv[]) {
 		debug_println("Client socket closed");
 
 		demo_println("Transmission complete");
+		demo_println("");
 		demo_println("");
 		
 		SSL_free(ssl);

@@ -186,6 +186,9 @@ int main(int argc, char* argv[]) {
 	demo_println(", signed by different CAs");
 
 	demo_printf("Server chose %d crypto protections\n", DIVERSITY_FACTOR);
+	demo_println("Negotiation complete");
+	demo_println("");
+
 	demo_printf("Activate encryption layer 1 with %s\n", cipher1);
 	demo_printf("Activate encryption layer 2 with %s\n", cipher2);
 
@@ -264,6 +267,7 @@ int main(int argc, char* argv[]) {
 	debug_println("Socket closed");
 
 	demo_println("Transmission complete");
+	demo_println("");
 	if (bytesToDownload > 0)
 		demo_open_file(file_to_save);
 
