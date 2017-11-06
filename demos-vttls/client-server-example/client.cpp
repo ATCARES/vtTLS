@@ -221,7 +221,7 @@ int main(int argc, char* argv[]) {
 		printf("File not found on server!\n");
 	} else {
 		debug_printf("%d bytes to download\n", bytesToDownload);
-		demo_println("Receiving secure response data from server...");
+		demo_print("Receiving secure response data from server");
 	}
 
 	// read empty line separator
@@ -246,6 +246,8 @@ int main(int argc, char* argv[]) {
 						file_rcv);
 				CHK_ERR(writeResult, "file");
 				trace_printf("Wrote %lu bytes to file\n", writeResult);
+
+				demo_print(".");
 			}
 			gettimeofday(&end, NULL);
 			diff = 1000 * (end.tv_sec - start.tv_sec)
@@ -257,6 +259,7 @@ int main(int argc, char* argv[]) {
 		// close file
 		fclose(file_rcv);
 		trace_println("File closed");
+		demo_println("");
 	}
 
 	/* send SSL/TLS close_notify */
