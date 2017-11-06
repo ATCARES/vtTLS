@@ -4,10 +4,17 @@ Installation:
 - make clean;
 - make
 
+Define the following environment variables:
+# sKnock definitions
+export KNOCKPATH=/home/ubuntu/sKnock
+export PYTHONPATH=/home/ubuntu/sKnock:$PYTHONPATH
+
 Run server:
 - ./server (runs on localhost on port 1111)
 
 Run client:
 - ./client <server-ip> <message-to-send>
 
+--
 Andre' Joaquim | 2016
+Miguel Pardal | 2017
