@@ -28,7 +28,7 @@
 #define DIVERSITY_FACTOR 2
 
 // Error checking
-#define CHK_NULL(x) if ((x)==NULL) exit (1)
+#define CHK_NULL(x,s) if ((x)==NULL) { fprintf(stderr, "%s null\n", s); exit (1); }
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 	demo_println("Send list of supported ciphers");
 
 	ssl = SSL_new(ctx);
-	CHK_NULL(ssl);
+	CHK_NULL(ssl, "ssl-ctx");
 
 	SSL_set_fd(ssl, sd);
 	/* Sets the file descriptor fd as the input/output
@@ -161,32 +161,32 @@ int main(int argc, char* argv[]) {
 	/* Get server's certificate (note: beware of dynamic allocation) - opt */
 
 	server_cert = SSL_get_peer_certificate(ssl);
-	CHK_NULL(server_cert);
+	CHK_NULL(server_cert, "server-cert");
 
 	server_sec_cert = SSL_get_n_peer_certificate(DIVERSITY_FACTOR, ssl);
-	CHK_NULL(server_sec_cert);
+	CHK_NULL(server_sec_cert, "server-cert-2");
 
 	debug_println("Server certificate:");
 
 	str = X509_NAME_oneline(X509_get_subject_name(server_cert), 0, 0);
-	CHK_NULL(str);
+	CHK_NULL(str, "x509-subject-name");
 	debug_printf("\t subject: %s\n", str);
 	OPENSSL_free(str);
 
 	str = X509_NAME_oneline(X509_get_issuer_name(server_cert), 0, 0);
-	CHK_NULL(str);
+	CHK_NULL(str, "x509-issuer-name");
 	debug_printf("\t issuer: %s\n", str);
 	OPENSSL_free(str);
 
 	debug_println("Server second certificate:");
 
 	str = X509_NAME_oneline(X509_get_subject_name(server_sec_cert), 0, 0);
-	CHK_NULL(str);
+	CHK_NULL(str, "x509-subject-name-2");
 	debug_printf("\t subject: %s\n", str);
 	OPENSSL_free(str);
 
 	str = X509_NAME_oneline(X509_get_issuer_name(server_sec_cert), 0, 0);
-	CHK_NULL(str);
+	CHK_NULL(str, "x509-issuer-name-2");
 	debug_printf("\t issuer: %s\n", str);
 	OPENSSL_free(str);
 
