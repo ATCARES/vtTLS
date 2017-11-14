@@ -43,7 +43,7 @@
 #define MAX_MSG_SIZE 16250
 
 // Error checking
-#define CHK_NULL(x) if ((x)==NULL) exit (1)
+#define CHK_NULL(x,s) if ((x)==NULL) { fprintf(stderr, "%s null\n", s); exit (1); }
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
@@ -200,10 +200,10 @@ int main(int argc, char* argv[]) {
 		demo_println(", signed by different CAs");
 		
 		ssl = SSL_new(ctx);
-		CHK_NULL(ssl); /* CHECKED */
+		CHK_NULL(ssl, "ssl-ctx");
 		SSL_set_fd(ssl, sd);
 		err = SSL_accept(ssl);
-		CHK_SSL(err); /* CHECKED */
+		CHK_SSL(err);
 
 		demo_println("Negotiation concluded with success");
 		demo_println("");
@@ -224,12 +224,12 @@ int main(int argc, char* argv[]) {
 			debug_println("Client certificate:");
 
 			str = X509_NAME_oneline(X509_get_subject_name(client_cert), 0, 0);
-			CHK_NULL(str);
+			CHK_NULL(str, "x509-client-cert-subject");
 			debug_printf("\t subject: %s\n", str);
 			OPENSSL_free(str);
 
 			str = X509_NAME_oneline(X509_get_issuer_name(client_cert), 0, 0);
-			CHK_NULL(str);
+			CHK_NULL(str, "x509-client-cert-issuer");
 			debug_printf("\t issuer: %s\n", str);
 			OPENSSL_free(str);
 			X509_free(client_cert);
