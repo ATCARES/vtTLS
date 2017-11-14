@@ -199,9 +199,12 @@ int main(int argc, char* argv[]) {
 		demo_printf("Sending %d different certificates", DIVERSITY_FACTOR);
 		demo_println(", signed by different CAs");
 		
+		trace_println("creating SSL context");
 		ssl = SSL_new(ctx);
 		CHK_NULL(ssl, "ssl-ctx");
 		SSL_set_fd(ssl, sd);
+
+		trace_println("SSL accept");
 		err = SSL_accept(ssl);
 		CHK_SSL(err);
 
