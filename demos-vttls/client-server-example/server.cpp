@@ -105,6 +105,10 @@ int main(int argc, char* argv[]) {
 	listen_sd = socket(AF_INET, SOCK_STREAM, 0);
 	CHK_ERR(listen_sd, "socket");
 
+	const int enable = 1;
+	err = setsockopt(listen_sd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+	CHK_ERR(err, "setsockopt(SO_REUSEADDR) failed");
+
 	memset(&sa_serv, 0, sizeof(sa_serv));
 	sa_serv.sin_family = AF_INET;
 	sa_serv.sin_addr.s_addr = INADDR_ANY;
