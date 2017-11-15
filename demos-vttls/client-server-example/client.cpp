@@ -55,22 +55,32 @@ int main(int argc, char* argv[]) {
 	/* arguments */
 	const char *ip;
 	unsigned int port;
+	char *knock;
 	const char *file_to_download;
 	const char *file_to_save;
 
 	/* Arguments validation */
-	if (argc != 5) {
+	if (argc != 6) {
 		printf(
-				"Usage: ./client <server-ip> <server-port> <file-to-download> <file-to-save>\n");
+				"Usage: ./client <server-ip> <server-port> <useKnock> <file-to-download> <file-to-save>\n");
 		exit(0);
 	}
 	ip = argv[1];
 	port = atoi(argv[2]);
-	file_to_download = argv[3];
-	file_to_save = argv[4];
+
+	// use port knock if argument is knock, yes, or y (case insensitive)
+	knock = argv[3];
+	if (strcasecmp("knock", knock) != 0 && strcasecmp("yes", knock) != 0
+			&& strcasecmp("y", knock) != 0) {
+		knock = NULL;
+	}
+
+	file_to_download = argv[4];
+	file_to_save = argv[5];
 	debug_printf(
-			"Arguments: IP %s Port %u File to download '%s' File to save '%s'\n",
-			ip, port, file_to_download, file_to_save);
+			"Arguments: IP %s Port %u Knock? %s File to download '%s' File to save '%s'\n",
+			ip, port, (knock ? "yes" : "no"), file_to_download,
+			file_to_save);
 
 	debug_printf("Work buffer size %d bytes\n", BUF_SZ);
 
@@ -106,16 +116,16 @@ int main(int argc, char* argv[]) {
 
 	demo_printf("Connect to server at %s\n", ip);
 
-	if (0) {
-		//  without sKnock
-		err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
-		CHK_ERR(err, "connect");
-		debug_println("Connected to server");
-	} else {
+	if (knock) {
 		// with sKnock
 		err = sknock_connect(sd, (struct sockaddr*) &sa, sizeof(sa));
 		CHK_ERR(err, "sknock");
 		debug_println("Connected to server with the help of sKnock");
+	} else {
+		//  without sKnock
+		err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
+		CHK_ERR(err, "connect");
+		debug_println("Connected to server");
 	}
 
 
@@ -126,6 +136,7 @@ int main(int argc, char* argv[]) {
 	demo_println("Start negotiation of security parameters");
 	demo_println("Send list of supported ciphers");
 
+	trace_println("create SSL context");
 	ssl = SSL_new(ctx);
 	CHK_NULL(ssl, "ssl-ctx");
 
@@ -134,8 +145,8 @@ int main(int argc, char* argv[]) {
 	 * facility for the TLS encrypted side
 	 * of argument "ssl"; fd is usually the socket descriptor */
 
+	trace_println("SSL connect");
 	gettimeofday(&start, NULL);
-
 	err = SSL_connect(ssl);
 	CHK_SSL(err);
 
