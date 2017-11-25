@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
 			debug_println("Client does not have certificate.");
 		}
 
-		/* --------------------------------------------------- */
+		/* ----------------------------------------------- */
 		/* DATA EXCHANGE - Receive message and send reply. */
 
 		demo_printf("Activate encryption layer 1 with %s\n", cipher1);
