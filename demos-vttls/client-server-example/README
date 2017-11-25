@@ -8,11 +8,12 @@ Server arguments:
 server <port> 
 
 Client arguments:
-client <ip> <port> <file-to-download> <file-to-save>
+client <ip> <port> <useKnock> <file-to-download> <file-to-save>
 
 Example:
 ./server 2000
-./client 127.0.0.1 2000 files/Tux.png MyTux.png
+./client 127.0.0.1 2000 knock files/Tux.png MyTux.png
+./client 127.0.0.1 2000 dontKnock files/Tux.png MyTux.png
 
 Available files:
 - test100k.txt --- 100KB text file with random chars
