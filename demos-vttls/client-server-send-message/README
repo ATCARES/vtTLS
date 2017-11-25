@@ -10,4 +10,6 @@ Run server:
 Run client:
 - ./client <server-ip> <message-to-send>
 
+--
 Andre' Joaquim | 2016
+Miguel Pardal | 2017
